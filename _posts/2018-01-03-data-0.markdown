@@ -1,0 +1,55 @@
+Data
+
+Right now we have control-flow graph language , which describe steps precisely , but during its execution, Computer also needs "Data Storage" to be described precisely. Now we need to complete our control-flow language with precise data description.
+
+All data you're processing is called 
+
+ *variable*
+
+It has same meanings as your Physical formula ,for example
+
+d =v * t
+
+variable d for distance , v for velocity , t for time. 
+
+you have a variable ,and you reference it by its name.
+
+
+Depends on how length the data is needed , Data Storage property fail into two catalogs: 
+
+1.static size: we know how much storage is needed even before actual execute, for example when calculate sum of lots of numbers, we only need to remember one sum.
+
+Let's take a simple example: calculate sum of integers from 1 ~ 100 . 
+
+    got a variable to store the sum, which is called 'sum' , initialize as 0
+    got a variable to store current integer we will add, called 'counter' ,initialize as 1
+
+    Loop Condition: 
+        counter <= 100 : sum = sum + counter , then counter = counter + 1
+        end
+
+    now sum stored the result of integer between 1~100
+
+We're practicing basic control flow so we don't use gauss formula. If we don't know it before , we use previously control flow to get the result. In computer programming , use the 
+
+Calculate result step by step without any smart, is called  "Brute Method" , or "Enumerate Method"
+
+
+
+
+2.dynamic size: we can only know storage requirements during execution, for example save user's name , it may have difference length.
+
+to better understood the programming flow , instead of get into detail of programming language, we makes second type storage as a "storage bag", it can contains any length of required data, you can
+
+1. tell if a number already in bag
+2. add a number into bag
+3. remove a number from bag
+4. iterate all number in bag (Loop over a bag)
+
+Let's take a example: calculate sum of all numbers from a bag ,which named is 'inputs'
+
+    got a variable to store the sum, which is called 'sum', initialize as 0
+    for each number 'n' inside inputs :
+        sum = sum + n
+      
+

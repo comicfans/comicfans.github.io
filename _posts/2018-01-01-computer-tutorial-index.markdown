@@ -33,4 +33,7 @@ Painting comics is completely different , if you want to draw a comic scene, you
 So with my tutorial , I'll reorder the Computer/Programming knowledge as comics painting, you're not learning a single Knowledge point ,but a System.
 
 
+You can read this tutorial by two ways, one is chapter by chapter , just like traditional book. If you like step by step learn , you can follow the main index. Another one is knowledge graph system based . It's just a game,  any chapter requires some sort of "skill points" and you must fit this requirements to view chapter. Finish chapter will gain the skill points. 
+
+
 

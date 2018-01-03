@@ -25,7 +25,8 @@ its just like the adventures gamebook with many decision points, you will got di
 It have some very basic construct blocks (or in other words,control block or statement) and construct rules:
 
      Normal Block: do something ,then control flow will goto following Block .
-     Condition Block: depends on a condition , control flow will goto paticular Block.
+     Condition Block: depends on a condition (true or false), control flow will goto different Block (branch1 or branch2) . 
+     Composite Block: contains one or more other Blocks (Any of Normal/Condition/Composite), you can treat it as "group multi block together as one"
 
 Ok let's take a look at following control flow:
 
@@ -127,4 +128,8 @@ picture
 
 
 Note: it's not a good idea to learn programming from bottom to top , which is ,  try to learn all the language rules first, and then start programming. Different languages have different feature sets and rules which you must learn from scratch,but high level logic keeps same across different languages. 
+
+
+
+can you describe if a integer is a prime number ?
 
