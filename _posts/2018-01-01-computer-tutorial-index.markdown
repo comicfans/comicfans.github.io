@@ -14,8 +14,8 @@ Welcome to comicfans's computer/programming learning page!
 
 this is start page for anyone who want to learn computer/programming, and first question : why you want to learn computer and programming from this page, instead of reading books or from other's pages ? Well I'm pretty sure reading my pages is much easier than any other ways ! Because I'm comicfans ,so my learning tutorial is just a comic book, and learning computer/programming is just as easy as reading comics!
 
-picture place holder: too many books
 
+If you follow university books to learning Computer/Programming, you may got such situation:
 ![before and after you decide to learn programming](/images/2018-01-01-computer-tutorial-index.markdown/before_and_after_decide_to_learn_programming.png)
 
 
