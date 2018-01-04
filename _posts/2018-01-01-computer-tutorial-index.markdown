@@ -16,7 +16,7 @@ this is start page for anyone who want to learn computer/programming, and first 
 
 picture place holder: too many books
 
-[before and after you decide to learn programming](images/2018-01-01-computer-tutorial-index.markdown/before_and_after_decide_to_learn_programming.png)
+[before and after you decide to learn programming](/images/2018-01-01-computer-tutorial-index.markdown/before_and_after_decide_to_learn_programming.png)
 
 
 Why this tutorial is called "Computer/Programming" learning ? As a self-education programmer, I've read some books on computer/programming topic , but found none of them teach computer/programming as a "whole system", you got many "Knowledge Points" after reading programming + Operation System + Algorithms, but they didn't make up a correct "Knowledge System", it's just like this :
