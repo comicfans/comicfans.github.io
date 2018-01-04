@@ -12,18 +12,13 @@ tags:
 
 Welcome to comicfans's computer/programming learning page!
 
-this is start page for anyone who want to learn computer/programming, and first question : why you want to learn computer and programming from this page, instead of reading books or from other's pages ? Well I'm pretty sure reading my pages is much easier than any other ways ! Because I'm comicfans ,so my learning tutorial is just a comic book, and learning computer/programming is just as easy as reading comics!
-
-
-If you follow university books to learning Computer/Programming, you may got such situation:
+This is start page for anyone who want to learn computer/programming, and first question : why you want to learn computer and programming from this page, instead of other ways ? Of course you can follow university course by reading books , but most time you may got such situation:
 ![before and after you decide to learn programming](/images/2018-01-01-computer-tutorial-index.markdown/before_and_after_decide_to_learn_programming.png)
 
-
-Why this tutorial is called "Computer/Programming" learning ? As a self-education programmer, I've read some books on computer/programming topic , but found none of them teach computer/programming as a "whole system", you got many "Knowledge Points" after reading programming + Operation System + Algorithms, but they didn't make up a correct "Knowledge System", it's just like this :
-
+I'm pretty sure reading my pages is much easier than any other's ! Because my name is comicfans ,so my learning tutorial is just a comic book, learning computer/programming is just as easy as reading comics!
 
 
-picture
+Why this tutorial is called "Computer/Programming" learning ? As a self-education programmer, I've read some books on computer/programming topic , but found none of them teach computer/programming as a "whole system", you got many "Knowledge Points" after reading, but it's still not easy to link them up as a "Knowledge System", it's just like this :
 
 
 Painting comics is completely different , if you want to draw a comic scene, you should follow such progress:
