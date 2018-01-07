@@ -24,7 +24,7 @@ Why this tutorial is called "Computer/Programming" learning ? As a self-educatio
 
 Painting comics is completely different , if you want to draw a comic scene, you should follow such progress:
 
-![painting progress](/images/2018-01-01-computer-tutorial-index.markdown/painting_progress.jpg)
+![painting progress](/images/2018-01-01-computer-tutorial-index.markdown/painting_process.jpg)
 
 
 So with my tutorial , I'll reorder the Computer/Programming knowledge as comics painting, you're not learning a single Knowledge point ,but a System.
