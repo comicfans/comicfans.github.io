@@ -20,10 +20,11 @@ I'm pretty sure reading my pages is much easier than any other's ! Because my na
 
 Why this tutorial is called "Computer/Programming" learning ? As a self-education programmer, I've read some books on computer/programming topic , but found none of them teach computer/programming as a "whole system", you got many "Knowledge Points" after reading, but it's still not easy to link them up as a "Knowledge System", it's just like this :
 
+![combine detail painting skills together](/images/2018-01-01-computer-tutorial-index.markdown/combine_eye_nose_mouse.jpg)
 
 Painting comics is completely different , if you want to draw a comic scene, you should follow such progress:
 
-
+![painting progress](/images/2018-01-01-computer-tutorial-index.markdown/painting_progress.jpg)
 
 
 So with my tutorial , I'll reorder the Computer/Programming knowledge as comics painting, you're not learning a single Knowledge point ,but a System.
