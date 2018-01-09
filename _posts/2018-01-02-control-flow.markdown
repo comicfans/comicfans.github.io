@@ -1,11 +1,10 @@
-Before learning the actual programming language, first we need to learn what is "Language". Computer can not understand "Natural Language" (such as English, very well yet). if you want to drive computer to do something for you, 
+Before learning the actual programming language, first we need to learn what is "Language". Computer can not understand "Natural Language" (such as English, very well yet). If you want to drive computer work for you, 
 
-you must input something which computer understood, the input itself, is language. 
+You must speak something as input which computer understood, the input, is called language. 
 
-Any form of input which drive computer do something for you , can be a language, from this perspective, it is not limited to that on programming books. When you browse internet with a browser, the mouse move and keyboard input, is also "browser" language. The browser understand these inputs , and feeds back the result -- the web page.
+Any form of such input can be a language. From this perspective, it is not limited to that on programming books, when you browse internet with a browser, the mouse move and keyboard input, is also "browser" language. The browser understand these inputs , and feeds back the result -- the web page.
 
-
-picture
+![browser language](images/2018-01-02-control-flow.markdown/browser_language.jpg)
 
 
 Most people don't treat this form of inputs as "programming language" , but any programming language also works in same way, the only differences is the input form. Most programming language take a "text" as inputs, you just write text with limited set words (which this language allowed), and computer take it in, run logic in it, feeds back the result.
