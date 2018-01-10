@@ -12,9 +12,10 @@ tags:
 
 
 
-for some people computer seems to be Voodoo, how can you control it to do almost anything for you ? Well actually before you have written even one line of code , you have been a programmer before, don't belive that ? can you tell me the result of 89 + 64 ? well it's 153, but how did you got this 
+for some people computer seems to be Voodoo, how can you control it to do almost anything for you ? Well actually before you have written even one line of code , you have been a programmer before, don't believe that ? Can you tell me the result of 89 + 64 ? Well it's 153, but how did you got this ?
 
-picturce got a calculator ...
+![use_calculator](/images/2018-01-01-program-intro.markdown/use_calculator.jpg)
+![no_calculator](/images/2018-01-01-program-intro.markdown/no_calculator.jpg)
 
 well almost everyone got this forumla:
 
