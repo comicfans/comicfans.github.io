@@ -19,119 +19,48 @@ for some people computer seems to be Voodoo, how can you control it to do almost
 
 well almost everyone got this forumla:
 
-<pre>
-    89
-  + 64
-  _____
-   153
-</pre>
+![add](/images/2018-01-01-program-intro.markdown/add.jpg)
 
 
-picture placeholder
-
-
-with this method, you can calculate sum of any two integers, no matter how long they are, even you can only remember the sum of two number less than 10.
+With this method, you can calculate sum of any two integers, no matter how long they are, even you can only tell sum of any two numbers less than 10.
 
 picture too easy ,don't leave 
 
 
 Actually, you have not only written a program, but also acted as a computer to execute your own program. So let's take a look into this:
 
-sum of any two number less than 10, which you already know is invariantable, predefined, is called "builtin rules"
+  Sum of any two number less than 10, which you already know , invariant ,predefined, This is called *builtin rules*
 
-continuously adding one digit, using builtin rules, until no more digit left. this is called "procedure", we created a "plus procedure" in previous example
+  Using builtin rules, Continuously adding one digit,  until no more digits left. This is called *procedure*, we created a "plus procedure" in previous example
 
-now everything setuped, you gives input 89 and 64 to this plus procedure, and the procedure gives output to you: 153
+Now everything setup , you execute the procedure with two numbers: 
 
-this is just programming , computer programming works exactly the same way. the computer have some builtin rules predefined, and the whole progress you send your procedure to computer, is just called :
+  89 and 64 , this is called *input*
 
-   programming
+  Procedure applied on these input , gives back to you : 153, which is called *output*
 
-computer can not understand human language like "continuously adding one digit until no more digit left", you must speak a language which it can understand , so the language you provided your procedure , is called 
+*This is just programming* . Computer programming works exactly the same way. It has some builtin rules predefined, and the whole progress you send your procedure to computer, is just called :
 
-   programming language
+   Programming
 
-to learn computer deeply and still easily, I choose
+Computer can not understand human language like "continuously adding one digit until no more digit left", you must speak a language which it can understand , so the language you provided your procedure , is called 
 
-   C language
+   Programming language
 
-as our entry point, we will learn more languages for other purpose in following tourial.
+There're many programming languages existed (with more developed every day) for different purpose , If language itself hide many low-level computer hardware detail for you, It's called :
 
-our first code ,is to calculate the sum from 1 ~ 5,
+   High Level Programming Language.
 
-lets start!
+As the Opposite , if language itself expose many low-level computer hardware detail to you, it's called:
 
-```C
-int result = 0;
-result = result+1;
-result = result+2;
-result = result+3;
-result = result+4;
-result = result+5;
-```
-at last, result will be 15
-That's it!  simple enough ?  this is a very basic C language block, let's take a overview on this:
+   Low Level Programming Language.
 
-* C code blocks is made up by many "statement"
-* statement execute one by one
-* every statement followed by a  ;
+High Level Programming Language provides many Out-Of-Box function which can boost your productivity , and most of them are more naturally to English speaking than low level ones .but I don't recommend newcomers learn them because it's not a "System" learning, but just a "Language" learning. Since this tutorial is intend to learn computer as a System, we need a language low level enough to know how system works underline , but still easy to understand and learn. I choose 
+  
+   C Language 
 
-now line by line :
+As basis of my tutorial , it has born for a long time, seems not as cool as some new languages, but from my perspective, it's still the best choice to learn the computer. And don't worry about missing cool features from others, keeps in mind that:
 
-```
-int result = 0;
-```
+  Language is just tools, only the *Logic* behind the Language is important.
 
-this is called a "declaration", a variable which is called "result" appears,and its initial value is 0 . we store result of every step on it.
-and int means "integer" ,it act just like integer in math. you can add two integers, just like math.(computer already have builtin rules for integer add)
-
-```
-result = result + 1
-```
-this is a assignment statement,means 
-caculate the sum of (result+1) 
-and then put it to result. you may think this statement breakup into following parts is eaier to understand:
-
-tempvalue = result +1
-result = tempvalue
-
-
-the right part of assigment is executed first, so you don't need to worry about result may have different values during this statment.
-
-
-
-ok ,lets get a more complicate one , get the sume from 1~10!
-
-```C
-int result = 0;
-result = result+1;
-result = result+2;
-result = result+3;
-result = result+4;
-result = result+5;
-result = result+6;
-result = result+7;
-result = result+8;
-result = result+9;
-result = result+10;
-```
-
-a little longer... what if we need to got sum from 1 to 999 ?well ,let's make it easier:
-
-
-```C
-int result = 0;
-
-int current=1;
-
-while(current <=999){
-result = result + current;
-current = current+1;
-}
-```
-
-this is called "loop" statement, which means :
-
-* when some condition  
-
-
+When you've learn the basis part of this tutorial, we'll introduce more languages , and you suddenly find you can learn new languages in days, hours , or maybe minutes!
