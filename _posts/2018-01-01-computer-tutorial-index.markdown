@@ -10,12 +10,16 @@ tags:
     - programming
 ---
 
-Welcome to comicfans's computer/programming learning page!
+# Welcome to comicfans's computer/programming learning page!
 
-This is start page for anyone who want to learn computer/programming, and first question : why you want to learn computer and programming from this page, instead of other ways ? Of course you can follow university course by reading books , but most time you may got such situation:
+This is start page for anyone who want to learn computer/programming, and first question : 
+
+  why you want to learn computer and programming from this page, instead of other ways ? 
+  
+Of course you can follow university course by reading bunch of books , but I'm pretty sure most time you may got into such situation:
 ![before and after you decide to learn programming](/images/2018-01-01-computer-tutorial-index.markdown/before_and_after_decide_to_learn_programming.png)
 
-Most computer/programming books are accurate, but also boring. They can be called as "Standard" or "Reference", but not "Tutorial". I'm pretty sure reading my pages is much easier than that, Because my name is comicfans ,so my learning tutorial is just a comic book, learning computer/programming is just as easy as reading comics!
+Most computer/programming books are *accurate*, but also *boring*. They should be called as "Standard" or "Reference", but not "Tutorial". I'm pretty sure reading my pages is much easier than that, Because my name is comicfans ,so my learning tutorial is just a comic book, learning computer/programming is just as easy as reading comics!
 
 
 Why this tutorial is called "Computer/Programming" learning ? As a self-education programmer, I've read some books on computer/programming topic , but found none of them teach computer/programming as a "whole system", you got many "Knowledge Points" after reading, but it's still not easy to link them up as a "Knowledge System", it's just like this :
@@ -42,4 +46,4 @@ OK, Let's GO!
 
 
 
-[Next](2018-01-01-program-intro.markdown)
+[Next](program-intro.markdown)
