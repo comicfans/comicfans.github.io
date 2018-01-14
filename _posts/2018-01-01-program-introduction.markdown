@@ -40,32 +40,36 @@ Actually, you have not only written a program, but also acted as a computer to e
 
 Now everything setup , you execute the procedure with two numbers: 
 
-  89 and 64 , this is called **input**
+  - 89 and 64 , which procedure operated on ,is called **input**
 
-  Procedure applied on these input , gives back to you : 153, which is called **output**
+  - 153, which procedure gives back to you , is called **output**
 
-**This is just programming** . Computer programming works exactly the same way. It has some builtin rules predefined, and the whole progress you send your procedure to computer, is just called :
+# This is just programming
 
-   Programming
+Computer programming works exactly the same way. It has some builtin rules predefined, and the whole progress you send your procedure to computer, is just called :
+
+   **Programming**
 
 Computer can not understand human language like "continuously adding one digit until no more digit left", you must speak a language which it can understand , so the language you provided your procedure , is called 
 
-   Programming Language
+   **Programming Language**
 
-There're many programming languages existed (with more developed every day) for different purpose , If language itself hide many low-level computer hardware detail for you, It's called :
+There're many programming languages existed (with more developed every day) for different purpose , If language itself hide many low-level computer hardware detail for you, it's called :
 
-   High Level Programming Language.
+   **High Level Programming Language**
 
 As the Opposite , if language itself expose many low-level computer hardware detail to you, it's called:
 
-   Low Level Programming Language.
+   **Low Level Programming Language**
 
 High Level Programming Language provides many Out-Of-Box function which can boost your productivity , and most of them are more naturally to English speaking than low level ones .but I don't recommend newcomers learn them because it's not a "System" learning, but just a "Language" learning. Since this tutorial is intend to learn computer as a System, we need a language low level enough to know how system works underline , but still easy to understand and learn. I choose 
   
-   C Language 
+   **C Language**
 
-As basis of my tutorial , it has born for a long time, seems not as cool as some new languages, but from my perspective, it's still the best choice to learn the computer. And don't worry about missing cool features from others, keeps in mind that:
+As basis of my tutorial , it has born for a long time, seems not as cool as some new ones, but from my perspective, it's still the best choice to learn the computer. And don't worry about missing cool features from others, keeps in mind that:
 
-  Language is just tools, only the *Logic* behind the Language is important.
+  Language is just **tools**, only the **Logic** inside your program is important.
 
 When you've learn the basis part of this tutorial, we'll introduce more languages , and you suddenly find you can learn new languages in days, hours , or maybe minutes!
+
+[Next](/2018/01/02/Control-Flow-Graph-Language.html)

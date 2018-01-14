@@ -1,37 +1,46 @@
-Before learning the actual programming language, first we need to learn what is "Language". Computer can not understand "Natural Language" (such as English, very well yet). If you want to drive computer work for you, 
+---
+layout:     post
+title:      "Control Flow Graph Language"
+subtitle:   "Blog"
+date:       2018-01-02 10:00:00
+author:     "comicfans"
+tags:
+    - c++
+    - computer
+    - programming
+---
 
-You must speak something as input which computer understood, the input, is called language. 
 
-Any form of such input can be a language. From this perspective, it is not limited to that on programming books, when you browse internet with a browser, the mouse move and keyboard input, is also "browser" language. The browser understand these inputs , and feeds back the result -- the web page.
+Programming Language it is not limited to that on programming books, when you browse internet with a browser, the mouse move and keyboard input, is also "Browser Control" language. The browser understand these inputs , and feeds back the result -- the web page.
 
 ![browser language](/images/2018-01-02-control-flow.markdown/browser_language.jpg)
 
 
-Most people don't treat this form of inputs as "programming language" , but any programming language also works in same way, the only differences is the input form. Most programming language take a "text" as inputs, you just write text with limited set words (which this language allowed), and computer take it in, run logic in it, feeds back the result.
+Most people don't treat this form of inputs as "programming language" , but any programming language also works in same way, the only differences is the input form. Most programming language take a "text" as inputs, you just write text with limited set words (which defined by language itself), and computer take it in, run logic in it, feeds back the result.
 
 
 
 
-To most newcomers , convert natural logic to "limited set of words which language understood" is the most complicate thing, to resolve this problem, we  ...  don't learn any of them (yet) ! We will learn a graphical understood easy language --
+To most newcomers , convert natural logic to "limited set of words which language understood" is the most complicate thing, to resolve this problem, we  ...  don't learn any of them (yet) ! We will learn a graphical understood easy language first --
 
-  ControlFlow Graph Language
+# Control Flow Graph Language
 
 
 Let's write our first program in control flow graph language:
 
 ![first controlflow graph](/images/2018-01-02-control-flow.markdown/first_control_flow.jpg)
 
-Its just like the adventures gamebook with many decision points, you will got different story line and end(good or bad) depends on your decision.
+Its just like the adventures gamebook with many decision points, you will got different story line and end (good or bad) depends on your decision.
 
 It have some very basic construct blocks (or in other words,control block or statement) and construct rules:
 
-     Normal Block: do something ,then control flow will goto following Block .
-     Condition Block: depends on a condition (true or false), control flow will goto different Block (branch1 or branch2) . 
-     Composite Block: contains one or more other Blocks (Any of Normal/Condition/Composite), you can treat it as "group multi block together as one"
+- Normal Block: do something ,then control flow will goto following Block .
+- Condition Block: depends on a condition (true or false), control flow will goto different Block (branch1 or branch2) . 
+- Composite Block: contains one or more other Blocks (Any of Normal/Condition/Composite), you can treat it as "group multi block together as one"
 
 Ok let's take a look at following control flow:
 
-example1: view tutorial page:
+Example1: view tutorial page:
 
 1. power on computer
 2. open browser 
@@ -39,11 +48,11 @@ example1: view tutorial page:
 
 ![power on ](/images/2018-01-02-control-flow.markdown/poweron.jpg)
 
-example2: decide what to do:
+Example2: decide what to do:
 
- is this tutorial interesting ?
-Yes: continue reading.
-No : close this page.
+-is this tutorial interesting ?
+ *Yes: continue reading.
+ *No : close this page.
 
 
 
