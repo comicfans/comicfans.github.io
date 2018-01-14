@@ -1,6 +1,6 @@
 ---
 layout:     post
-title:      "computer tutoial zero"
+title:      "program introduction"
 subtitle:   "Blog"
 date:       2018-01-01 11:00:00
 author:     "comicfans"
@@ -11,8 +11,13 @@ tags:
 ---
 
 
+# Been programmer before realize
 
-for some people computer seems to be Voodoo, how can you control it to do almost anything for you ? Well actually before you have written even one line of code , you have been a programmer before, don't believe that ? Can you tell me the result of 89 + 64 ? Well it's 153, but how did you got this ?
+for some people computer seems to be Voodoo, how can you control it to do almost anything for you ? Well actually before you have written even one line of code , you have been a programmer before, don't believe that ? Can you tell me answer of 
+
+  89 + 64 = ?
+
+Well it's 153, but how did you got this ?
 
 ![use_calculator](/images/2018-01-01-program-intro.markdown/use_calculator.jpg)
 ![no_calculator](/images/2018-01-01-program-intro.markdown/no_calculator.jpg)
@@ -29,23 +34,23 @@ picture too easy ,don't leave
 
 Actually, you have not only written a program, but also acted as a computer to execute your own program. So let's take a look into this:
 
-  Sum of any two number less than 10, which you already know , invariant ,predefined, This is called *builtin rules*
+  - Sum of any two number less than 10, which you already know , invariant ,predefined, This is called **builtin rules**
 
-  Using builtin rules, Continuously adding one digit,  until no more digits left. This is called *procedure*, we created a "plus procedure" in previous example
+  - Using builtin rules, Continuously adding one digit,  until no more digits left. This is called **procedure**, we created a "plus procedure" in previous example
 
 Now everything setup , you execute the procedure with two numbers: 
 
-  89 and 64 , this is called *input*
+  89 and 64 , this is called **input**
 
-  Procedure applied on these input , gives back to you : 153, which is called *output*
+  Procedure applied on these input , gives back to you : 153, which is called **output**
 
-*This is just programming* . Computer programming works exactly the same way. It has some builtin rules predefined, and the whole progress you send your procedure to computer, is just called :
+**This is just programming** . Computer programming works exactly the same way. It has some builtin rules predefined, and the whole progress you send your procedure to computer, is just called :
 
    Programming
 
 Computer can not understand human language like "continuously adding one digit until no more digit left", you must speak a language which it can understand , so the language you provided your procedure , is called 
 
-   Programming language
+   Programming Language
 
 There're many programming languages existed (with more developed every day) for different purpose , If language itself hide many low-level computer hardware detail for you, It's called :
 

@@ -14,12 +14,14 @@ Most people don't treat this form of inputs as "programming language" , but any 
 
 To most newcomers , convert natural logic to "limited set of words which language understood" is the most complicate thing, to resolve this problem, we  ...  don't learn any of them (yet) ! We will learn a graphical understood easy language --
 
-ControlFlow Graph Language
+  ControlFlow Graph Language
+
 
 Let's write our first program in control flow graph language:
 
+![first controlflow graph](/images/2018-01-02-control-flow.markdown/first_control_flow.jpg)
 
-its just like the adventures gamebook with many decision points, you will got different story line and end(good or bad) depends on your decision.
+Its just like the adventures gamebook with many decision points, you will got different story line and end(good or bad) depends on your decision.
 
 It have some very basic construct blocks (or in other words,control block or statement) and construct rules:
 
@@ -35,6 +37,7 @@ example1: view tutorial page:
 2. open browser 
 3. goto https://comicfans.github.io
 
+![power on ](/images/2018-01-02-control-flow.markdown/poweron.jpg)
 
 example2: decide what to do:
 
