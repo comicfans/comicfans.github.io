@@ -1,0 +1,135 @@
+# binary and logical gate
+
+
+From Previous chapter , we're talking about digitalize color as 3-component number, did you mention that the value range of component is a little wired ? Why choose 0~255, instead of 0~100 ? Reason for that is the basis computer store data -- binary.
+
+We're using decimal (DEC for short) daily ,which means radix of number is 10, you have
+
+0,1,2,3,4,5,6,7,8,9 
+
+Possible numbers in one radix, but in computer , you have only two :
+
+0 , 1  (also called **TRUE** or **FALSE**)
+
+This is called : **Binary** (**BIN** for short). Minimal unit of binary is called 'bit'
+
+How to read a number represented as decimal ? 
+
+327 (DEC) =  3*10^2 + 2 * 10^1 + 7 * 10^0
+#pic
+How to read a number represented as binary ? 
+
+101 = 1* 2^2 + 0 * 2^1 + 1* 2^0  =  5 (DEC)
+
+We call first number from left to right **Most Significant Bit(MSB** for short), and last number **Least Significant Bit(LSB** for short)
+
+#pic
+ 
+
+
+In binary form , number from 0~9 will written as following form:
+
+decimal | binary
+-----------------
+    0   |   0
+    1   |   1
+    2   |   10
+    3   |   11
+    4   |  100
+    5   |  101
+    6   |  110
+    7   |  111
+    8   |  1000
+    9   |  1001
+
+
+
+Binary seems not very naturally to us, but it simplify everything in computer implementation. For example:
+
+We can treat Volta of high as 1 , low as 0, through this concept, we map one bit to a physical wire (more precisely,a wire and the ground). With more wires added, we can represent bigger number.
+
+
+Alright we can represent numbers by wires, but how computer use these wires to do "calculation" ? If we dig into hardware of computer, we'll find it's made up by lots of "logical gate", which is the basis of calculation . There're a few types:
+
+Output wire Volta is high only if two input wires Volta both are high , otherwise low. This is called "AND" gate
+
+1 AND 1 = 1
+0 AND 1 = 0
+0 AND 0 = 0
+1 AND 0 = 0
+
+Output wire Volta is high no matter which one of two inputs is high , otherwise low. This is called "OR" gate
+
+1 OR 1 = 1
+1 OR 0 = 1
+0 OR 1 = 1
+0 OR 0 = 0
+
+Output wire Volta is inverse of input wire, This is called "NOT" gate
+
+NOT 1 = 0
+NOT 0 = 1
+
+
+These formula is called **Boolean algebra**, also called **Bitwise Operation**. These logical gate can only operate on 1 bit only , but they can be combined to do almost any operation.
+
+Let's take a simple example: implements a one bit binary plus function :
+
+  A   \ B     |  0   |  1   | 
+----------------------------
+    0         |  00  |  01  |
+-----------------------------
+    1         |  01  |  10  |
+-----------------------------
+
+Ouptut C is made up by two bits C0 (MSB) and C1 (LSB)
+
+C0 =  A AND B 
+C1 =  ( A AND (NOT B) ) OR ( B AND (NOT A) )
+
+A more complicate example: implements a two bits binary multiply function :
+
+
+ A   \   B    |   00  |   01   |   11   |   10
+-----------------------------------------------
+    00        | 0000  |  0000  |  0000  |  0000
+-----------------------------------------------
+    01        | 0000  |  0001  |  0011  |  0010
+-----------------------------------------------
+    11        | 0000  |  0011  |  1001  |  0110
+-----------------------------------------------
+    10        | 0000  |  0010  |  0110  |  0100
+-----------------------------------------------
+
+A is made up by two bits:  A0(MSB)     A1(LSB)
+B is made up by two bits:  B0(MSB)     B1(LSB)
+
+Output is 4 bit, made up by C0(MSB) ~ C3(LSB)
+
+C0 = A0 AND  B0   AND  A1   AND  B1
+C1 = A0 AND  B0   AND  ( (NOT A1 ) OR (NOT B1)   ) 
+C2 = ( A0 AND B1 AND ( (NOT A1) OR ( NOT  B0 )  ) )  OR  ( A1 AND B0 AND ( (NOT A0 ) OR ( NOT B1 ) ) )
+C3 = A1 AND B1
+
+(this example taken from https://www.slideshare.net/gvsmbabbu/minimizing-boolean-30344795)
+
+The more logical gates you use, the more complicate process you can make up. Today's Computer is made up by millions or even billions logical gates.
+
+
+What can you learn from these "Calucator" ? If you read the boolean expression of every output bit , you'll quickly realize that :
+
+# Every Bit is outputted by just enumerate every possible combination of input
+
+Yes, Logical gate do **not** understand "algebra", it can "calculate" just because you design the basic rule and assign meanings to the "input" and "output". This is just like what "program" does, it does have process defined by you, but the meanings and logic , both assigned from you, can't been understood by computer.
+
+
+
+Now let's take a step back to digitalize, why a color component value range is chosen as 0~255 instead of 0~100 ? Reason for that is computer store values as binary, so all digitalized content choose value range which is suitable for binary represent, and :
+
+    Computer usually choose to group 8 bit's together to represent a binary value, as the minimal unit to operate , which is called **Byte**
+
+0~255 is just the value range of 1 Byte.
+
+
+
+

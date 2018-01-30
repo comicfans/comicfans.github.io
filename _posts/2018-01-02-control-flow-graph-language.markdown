@@ -51,20 +51,18 @@ Example1: view tutorial page:
 Example2: decide what to do:
 
 -is this tutorial interesting ?
- *Yes: continue reading.
- *No : close this page.
+*Yes: continue reading.
+*No : close this page.
 
+Of course this program can be modified as following :
 
-
-of course this program can be modified as following :
-
- is this tutorial interesting ?
-Yes: continue reading.
-No : answer this question again.
+-is this tutorial interesting ?
+*Yes: continue reading.
+*No : answer this question again.
  
 picture.
 
-if you written such logic by mistake like this, which makes result unexpected, that said you have a 
+If you written such logic like this **by mistake**, which makes result unexpected, that said you have a 
 
 # BUG
 
@@ -130,7 +128,7 @@ Why we're repeating learning such stupid low level steps ? Remember that compute
 
   describe exactly every single precise step what you want to do
 
-it's just like when surfing the internet, you have to use mouse and keyboard (or maybe touch screen) to tell browser which page you want. When every step you lowered can be understood by programming language, congratulations! You've been a programmer!  
+It's just like when surfing the internet, you have to use mouse and keyboard (or maybe touch screen) to tell browser which page you want. When every step you lowered can be understood by programming language, congratulations! You've been a programmer!  
 
 to test whether you can describe precise steps , design a program as ControlFlow graph ,and asking your friend to execute it , to see if the result is expected !
 

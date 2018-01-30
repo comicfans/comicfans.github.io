@@ -62,6 +62,11 @@ As the Opposite , if language itself expose many low-level computer hardware det
 
    **Low Level Programming Language**
 
+Why so many different languages developed ? Why not just using High Level Language , or maybe using only one Language ?
+
+picture
+
+
 High Level Programming Language provides many Out-Of-Box function which can boost your productivity , and most of them are more naturally to English speaking than low level ones .but I don't recommend newcomers learn them because it's not a "System" learning, but just a "Language" learning. Since this tutorial is intend to learn computer as a System, we need a language low level enough to know how system works underline , but still easy to understand and learn. I choose 
   
    **C Language**

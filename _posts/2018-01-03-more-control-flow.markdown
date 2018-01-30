@@ -57,7 +57,7 @@ Your program create corresponding data, and send them to monitor/speaker, you fi
 
 
 It's just like painting , you have paper and pencil, learn how to draw lines and circles, but when you're experienced, you can paint anything you like.
-programming language is just the paper and pencil. And now we're learning how to paint line and circle.
+Programming language is just the paper and pencil. And now we're learning how to paint line and circle.
 
 
 
