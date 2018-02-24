@@ -1,4 +1,17 @@
-Data
+---
+layout:     post
+title:      "Data part 0"
+subtitle:   "Blog"
+date:       2018-01-03 10:00:00
+author:     "comicfans"
+tags:
+    - c++
+    - computer
+    - programming
+---
+
+
+
 
 Right now we have control-flow graph language , which describe steps precisely , but during its execution, Computer also needs "Data Storage" to be described precisely. Now we need to complete our control-flow language with precise data description.
 

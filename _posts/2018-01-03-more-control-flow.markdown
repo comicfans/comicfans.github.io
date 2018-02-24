@@ -1,5 +1,15 @@
+---
+layout:     post
+title:      "More Control Flow"
+subtitle:   "Blog"
+date:       2018-01-03 10:00:00
+author:     "comicfans"
+tags:
+    - c++
+    - computer
+    - programming
+---
 
-# More Control Flow 
 
 at previous chapter, we've seen two basic control flow block, simple and condition. For convenience's sake , we introduce two more control flow,
 

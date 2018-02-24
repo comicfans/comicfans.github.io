@@ -1,4 +1,18 @@
-# binary and logical gate
+---
+layout:     post
+title:      "Data part 1"
+subtitle:   "Blog"
+date:       2018-01-23 10:00:00
+author:     "comicfans"
+tags:
+    - c++
+    - computer
+    - programming
+---
+
+
+
+# Binary and Logical Gate
 
 
 From Previous chapter , we're talking about digitalize color as 3-component number, did you mention that the value range of component is a little wired ? Why choose 0~255, instead of 0~100 ? Reason for that is the basis computer store data -- binary.
