@@ -86,3 +86,5 @@ You can also generate a picture by creating this number bag, even with random nu
 
 
 Mantbroate set
+
+The most incredible feature of this picture is that it's created by a very simple math formula. We'll write this code soon.
