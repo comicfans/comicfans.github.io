@@ -29,13 +29,13 @@ This is called : **Binary** (**BIN** for short). Minimal unit of binary is calle
 
 How to read a number represented as decimal ? 
 
-327 (DEC) =  3*10^2 + 2 * 10^1 + 7 * 10^0
+327.94 (DEC) =  3*10^2 + 2 * 10^1 + 7 * 10^0 + 9 * 10^-1  + 4 * 10^-2
 #pic
 How to read a number represented as binary ? 
 
-101 = 1* 2^2 + 0 * 2^1 + 1* 2^0  =  5 (DEC)
+101.01 (BIN) = 1* 2^2 + 0 * 2^1 + 1* 2^0 + 0 * 2^-1 + 1 * 2^-2 =  5.25 (DEC)
 
-We call first number from left to right **Most Significant Bit(MSB** for short), and last number **Least Significant Bit(LSB** for short)
+We call first number from left to right **Most Significant Bit** (**MSB** for short), and last number **Least Significant Bit** (**LSB** for short)
 
 #pic
  
@@ -61,6 +61,11 @@ decimal | binary
 Binary seems not very naturally to us, but it simplify everything in computer implementation. For example:
 
 We can treat Volta of high as 1 , low as 0, through this concept, we map one bit to a physical wire (more precisely,a wire and the ground). With more wires added, we can represent bigger number.
+
+#picture : more than 3v = 1 
+           less than 3v = 0 
+           more Intuitive example: light on is 1 , off is 0. you can use it to create a N bit number store
+           or use your finger as binary. by gesture, you can only represent 10 states, but with binary , you have 2^5 states!
 
 
 Alright we can represent numbers by wires, but how computer use these wires to do "calculation" ? If we dig into hardware of computer, we'll find it's made up by lots of "logical gate", which is the basis of calculation . There're a few types:
@@ -125,6 +130,9 @@ C1 = A0 AND  B0   AND  ( (NOT A1 ) OR (NOT B1)   )
 C2 = ( A0 AND B1 AND ( (NOT A1) OR ( NOT  B0 )  ) )  OR  ( A1 AND B0 AND ( (NOT A0 ) OR ( NOT B1 ) ) )
 C3 = A1 AND B1
 
+
+(In the culture of digital circuits , there's a method called K-map to find the simplest expression form of boolean expression)
+
 (this example taken from https://www.slideshare.net/gvsmbabbu/minimizing-boolean-30344795)
 
 The more logical gates you use, the more complicate process you can make up. Today's Computer is made up by millions or even billions logical gates.
@@ -132,18 +140,18 @@ The more logical gates you use, the more complicate process you can make up. Tod
 
 What can you learn from these "Calucator" ? If you read the boolean expression of every output bit , you'll quickly realize that :
 
-# Every Bit is outputted by just enumerate every possible combination of input
+# Every result Bit is made up by by enumerating every possible combination of input
 
-Yes, Logical gate do **not** understand "algebra", it can "calculate" just because you design the basic rule and assign meanings to the "input" and "output". This is just like what "program" does, it does have process defined by you, but the meanings and logic , both assigned from you, can't been understood by computer.
-
-
-
-Now let's take a step back to digitalize, why a color component value range is chosen as 0~255 instead of 0~100 ? Reason for that is computer store values as binary, so all digitalized content choose value range which is suitable for binary represent, and :
-
-    Computer usually choose to group 8 bit's together to represent a binary value, as the minimal unit to operate , which is called **Byte**
-
-0~255 is just the value range of 1 Byte.
+Yes, Logical gate do **not** understand "algebra", it can "calculate" just because you design the basic rule and assign meanings to the "input" and "output". This is just like what "program" does: it does have process defined by you, but it didn't understand the meanings and logic behind the process. The meanings and logic is defined by , You
 
 
+
+Now let's take a step back to digitalize, why a color component value range is chosen as 0~255 instead of 0~100 ? Reason is that computer store values as binary, so all digitalized content choose values which is suitable for binary represent, and :
+
+    Computer usually group 8 bits together as the minimal unit to operate , which is called **Byte**
+
+0~255 is just the value range of 1 Byte. Note that value range of binary is always 0 ~ 2^n-1 (every bit is 1) , and in computer/programming , 
+
+    We prefer to count number from 0, instead of 1 . that simply many things.
 
 
