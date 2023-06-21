@@ -302,3 +302,18 @@ if you like, it's also possible write a clearcase spec parser, to support the
 'dynamic' checkout logic, just pick files from their branch(of course it can only
 include latest changes inside pre-downloaded)
 
+following up tasks: authorization in svn
+due to some company policy, we have to use windows system for svn server,
+and manage user authorization will be time consuming, since our company use LDAP,
+I think this can be done by deliver svn authorization to LDAP. with some 
+google, seems that svn can use sasl to do authorization, but sasl + LDAP needs
+extra plugins on LDAP server. (I can't understand why this is needed, since I 
+also configure JIRA to use LDAP authorization, it only requires a admin username/password,
+then I can config which users should be filtered as JIRA accounts),
+so I wrote a very simple SASL plugin simpleldap, just filling username
+part as ldap bind path (someone suggested this is a security hole, but this
+is just enough for my usage), it's here. But unfortunately this code didn't 
+get upstream before I left that company. Since I don't have the environment for
+testing anymore, I also use intention to improve it.
+
+
