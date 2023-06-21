@@ -1,5 +1,6 @@
 During my job at some company, I got a very project, boss decide to stop using their more than 20 years 
-version control system, IBM clearcase, and they want to preserve their development history as much as possible.
+version control system, IBM clearcase to cost down (will stop clearcase service at deadline!),
+and they want to preserve their development history as much as possible.
 since I have experience of using cvs/svn/git, I'm glade to take this challenge. Finally I successfully
 convert this super-big clearcase history to svn repo, with all file development history preserved. 
 It's very interesting experience, I hope to share them here (It's already more than 5 years job before,
@@ -135,16 +136,169 @@ mostly, for the reasons:
 1. there exists a cc2svn script to convert clearcase repo to svn, simplify the convert logic
 2. every file of clearcase live in a branch, a tag pick file from specified branch(or tag),
    and branch/tag in svn can be viewed as a folder, clearcase tag pick procedure can be viewed
-   as svn copy from branch folder to destination branch/tag dir
+   as svn copy from its branch folder to destination branch/tag dir
 3. clearcase don't force overall file in one branch/tag, every file evolute independently,
-   although svn have global version, but branches is just dir named under branches dir,  
+   although svn have global version, but branches is just dir under branches dir,  
    different dir can have their own history (as long as you don't treat their root as overall dir)
+   so clearcase per-branch history can be placed under some old_migrate dir, so these old clearcase branches (
+   which only contains history of part of files) won't confuse user
 
-I've also considered git conversion, but for two reasons this don't got
+I've also considered git conversion, but for two reasons I don't take this approach
 
 1. git don't have permission control, any user can access repository can view all contents,
-   but svn allow user authorization and permission control
+   but svn allow user authorization and permission control. our company needs permission control
 
 2. clearcase branch can be mapped to git branches too,
    (as long as you always start empty branch and only contain files within this branch)
-   but git branch default is a 
+   but git branch usually shown as top level object, hundreds old clearcase history branch 
+   (which only contains history of parts of files) will confuse user
+
+
+first challenge : get full clearcase history description
+
+I want to preserve all file history, so history of all files must exist, but 
+after trying cc2svn script from github, I realized that it only preserve the files
+existed under specified view of local checkout ,
+don't including all history of the VOB(files not selected or files already deleted won't appear),
+the correct command to dump all history of VOB is 
+
+```
+
+```
+
+
+it will describe every changes of the VOB, including branch tree, file path, commit message
+and much bigger than cc2svn will download.
+with this full description, I can download every single version of all files 
+cc2svn script said that to start the tool 2 days before to pre-download the history, 
+but seems my company's history is much-much bigger, it has 7 VOBS and total revision more than 4000000!
+(actually there isn't so many changes, clearcase records version for every single file,
+so even you change 100 files at once, it will create 100 revision in total), 
+
+what makes it worse is that my company's firewall rule limits network traffic,
+even I'm just downloading clearcase history! clearcase download speed will drop down
+after a while, and disconnected frequency, I may miss lots of download contents!
+(seems clearcase use udp traffic? I didn't confirm that)
+
+thus I decide to improve the download script, 
+
+1. it need to resume after break or failed command
+2. download process must be distributable across different machines, to lower down per-machines's traffic,  and accelerate total speed
+
+finally I use a shared folder share download files, every file using clearcase history path
+as its dir so path won't clash, and while downloading, use simple mark file
+to record if such file is being processed, or completed, to help resume downloading from interrupted command
+and avoid two machines operate one file. with more than a week downloading
+(and pingpong with our security team, because I have unusual traffic)
+I finally downloaded all the history, and now It's time for the actual convert
+
+svn convert is also very straightforward, you write series of svn import commands
+every command record the operate file path, the action, feed this commands
+into svn command, then it will construct a repository based on these commands
+of course you must ensure the later commands must have corresponding history,
+otherwise it will have different history structure. 
+
+
+because history records is parsed from clearcase VOB log file,
+and parse process is very slow and not easy 
+for analysis, so I decide to convert these records into database,  
+this is required because converting 4000000 commits repo will spend hours and days,
+incorrect convert logic just waste too much time. records in database not only
+allow me to skip slow parse process, but also filter parts of file/time to create a simplified repo,
+and verify its correctness. since this is just a correctness verify process,
+I even don't need to put actual
+file contents in it, just dump the file version information and the real path of 
+my pre-download cache path can help me to verify the contents. 
+
+converting the parsed log into database also brings me interesting experience,
+since records are formed by sequence/datetime , so it doesn't matter which
+records is imported earlier, that makes parallel parse/import possible. 
+usually split files by parts of lines requires parse whole file (to find correct line break)
+but we have have a simple hack, just split file by bytes range, and for every
+bytes range start, just look ahead to find next valid line header,
+(because clearcase log format has fixed header format of records)
+so it just need a head seek and a little bytes look ahead.
+every process part looks ahead to find next valid line, so different process won't 
+overlap each other, and won't miss lines.  
+be aware of python GIL, you should use multiprocess instead of thread.
+
+
+currently the converted svn repo is just a small part of files/history,
+every file is dummy text, but enough for me to verify history structure.
+with some enhancement to cc2svn script, I can also including the delete/moved file history,
+in converted repo, now I can use svn client to view every file history graph,
+to verify it's same as graph of clearcase client shown. maybe this can be checked strictly 
+by topically sort their history, but I don't have enough time to try , just verify some of them.
+
+
+improvement of clearcase history
+
+1. reducing duplicate commits
+
+I didn't try to convert 4000000 revisions to svn at once, because there're too many duplicated commits
+(remember that 100 file changes in one changeset will create 100 commits?), if possible, I hope 
+to 'merge' these commits back as one changeset, that will much improve the final history. 
+since commit multiply files in clearcase will have exactly same commit message, I can use this information
+to re-construct the history, when commits submit adjacent to each other, and these commits have same comment,
+merge them as one changeset, after this process and verification, final svn history can be greatly reduced
+to 600000 revisions, less than 1/6 of raw clearcase history, not bad!
+
+2. fix bad comment message
+
+another problem of clearcase history is that it doesn't support unicode, dumped records have messages in all locales,
+so I use firefox chardet to guess their original encoding, and for some special case which chardet didn't give correct 
+result, I tried multi encoding and record their frequency words as part of guessing procedure, it does not only
+get them right, but also correct similar messages.
+
+before finally actual convert, I also need a overall svn dump,
+its file contents is still empty, but whole repository history structure won't
+be different to final repository, this is just to verify all the generated
+svn history is correct and can be constructed correct svn history.
+
+it turns out to be a very good idea, I found that even after reducing history down to 600000 revisions,
+and file contents still dummy contents, such dump construct still spend too much time,
+since windows filesystem is not friendly to many small files, plus my company has antivirus protection
+to future lower down, or even interrupted the import process! 
+I have to try linux in virtual machine, but still too slow, I already tried ext4 on a passthrough ssd!
+which filesystem and disk can be faster? tmpfs on ram! 
+tmpfs using memory as baking store , and will auto swap to disk when capacity exceeds.
+so I put the repo in tmpfs, thanks to the 64GB memory, the convert process speedup a lot! 
+but I quickly hit another limitation, file number exceeds tmpfs limit, maybe nr_inodes can 
+fix it , but I tried another method, just run svnadmin pack endlessly, it will compact 
+the repository every 1000 revisions reduce file number, 
+and importantly it can operate simutinously when the importing running, 
+so I don't need to care about inode exceeds. This approach has only one drawback:
+I must save the converted repository before any shutdown/crash…
+
+after some tries, I finally got the all file dummy repository, 
+without hitting any problem during construction,
+and confirm file history graph appears same as clearcase shown, 
+
+
+construct clearcase local view from imported svn history
+
+and before the final actual convert, I still need another check,
+to confirm branches/tags in clearcase can be correctly generated 
+from this dummy history. Because clearcase local view is only a specified version
+collection, so it can be viewed as svn 'copy' action, to copy every specified
+version from their living branch (because we know the last version of every file,
+and we know where we put this file under svn dir) to the final tag dir
+the only required input is the clearcase local view description (tell you version
+of every file). 
+
+after checking some tags dummy file history same as clearcase history,
+I finally switch the dump generate code to read actual file contents
+and feed it into svn repo reconstruction, and finally got the svn repo,
+containing 600000 revisions, more than 20 years history of every file,
+every file has exactly same history structure as clearcase.
+
+last missed part is your local checkout view (tags/branch), without their
+version description, you don't know which revision of every file came from.
+maybe we can compare file contents to pre-downloaded file contents, but it 
+can't assume the file is exactly the revision (file can be identical at different version)
+so can't construct exactly same history structure (but latest contents is same)
+
+if you like, it's also possible write a clearcase spec parser, to support the 
+'dynamic' checkout logic, just pick files from their branch(of course it can only
+include latest changes inside pre-downloaded)
+
