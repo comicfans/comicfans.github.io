@@ -16,12 +16,18 @@ During software development (even the simplest ones), developers may face
 at that time they may want 'time machine' to take them back to 2 days ago.
 and VCS is such this time machine. you can see it as a infinite undo-redo
 history, it manage a folder which contains all dir/files needed to be remembered,
-(which called a repository). and remember everything changed during your development even after
+(which called a repository). And remember everything changed during your development even after
 editor closing. Of course it isn't so intelligent, you have to use its client
 tool at some time (usually when you finish some meaningful work) to tell it
-'please remember state right now'. and VCS will record a 'version'.
+'please remember state right now'. And VCS will record a 'version'.
 (this procedure usually called 'commit') when you want to go back to early state,
 just tell VCS a version to view, and you will have a history snapshot. 
+
+VCS also allow none-linear history, means history timeline may divided at some time point,
+and individual timeline evolute independently, history form a 'tree',
+Usually this function is called a 'branch', just like a branch of the tree.
+For example you may working on a new feathers branch with lots of unstable changes,
+but another production branch only keep the most stable changes.
 
 another important usage of VCS is for cooperate development ,
 30 developers who're working on one software need a easy way to share
@@ -84,4 +90,61 @@ there're lots of post for this topic, I will skip it.
 
 Now back to my task, how clearcase worked? 
 
-clearcase behaviors much like cvs, file evoluted independently, and there'll
+disclaimer: most of these section is from my memory, since clearcase is a 
+propriety software,expensive and hard to be deployed locally, so I can't verify
+every behavior. 
+
+clearcase behaviors much like cvs, file evolute independently, all files default
+live in 'main' branch, you can create branches, but branch doesn't require 
+all files exist (you may have branch1 which contains file1, but branch2 only contains file2)
+
+so it's checkout (which is called spec) behaves just like route table or SQL
+
+dir1/subdir1: branch1   -----> you have these files development in branch1 
+dir2/subdir2: branch2   -----> you have these files development in branch2
+*: main                 -----> other files left as default 'main' branch
+
+it will pick dir1/subdir1 contents from branch1, dir2/subdir2 from branch2, and not specified files will using ones from main branch
+but why should you checkout different branch for different files? Isn't it confusing?
+I think clearcase may suppose developers should have some of files evolute 
+in some branch, but other files kept as original (which we have seen in previous section, such concept has some limitation).
+another possible answer is that different team may using same repo with different naming/development convention,
+nobody can force a unique branch convention for all the development, thus when
+you need to combine their work together, checkout different branch for different files
+is the only (quickly) solution.
+
+you may find problem here, such spec don't ensure exactly same version of two runs,
+because file in branch1/branch2 may change after you checkout the spec!
+
+only the checkout local copy has a consist view. clearcase also provide tag function,
+using local checkout copy, clearcase can create a fixed view of all files at specified version.
+and such tag will be a unchanged snapshot view (but if you're using checkout spec
+to pick some files from branch instead of tag, such files still won't be consist)
+
+clearcase have some concept to help divide individual repo to different top level
+containers which is called a "VOB", different VOB can be viewed as different repository,
+since they can have different permission control. I think different VOBs should
+hold completely independent codebase, but for my task, source code
+spread across 7 vobs (and clearcase also allow you to pick files from multiply vobs into same dir),
+I think such concept didn't help to split codebase.
+
+
+after comparing basic concept and available convert tool ,  I think svn match clearcase
+mostly, for the reasons:
+
+1. there exists a cc2svn script to convert clearcase repo to svn, simplify the convert logic
+2. every file of clearcase live in a branch, a tag pick file from specified branch(or tag),
+   and branch/tag in svn can be viewed as a folder, clearcase tag pick procedure can be viewed
+   as svn copy from branch folder to destination branch/tag dir
+3. clearcase don't force overall file in one branch/tag, every file evolute independently,
+   although svn have global version, but branches is just dir named under branches dir,  
+   different dir can have their own history (as long as you don't treat their root as overall dir)
+
+I've also considered git conversion, but for two reasons this don't got
+
+1. git don't have permission control, any user can access repository can view all contents,
+   but svn allow user authorization and permission control
+
+2. clearcase branch can be mapped to git branches too,
+   (as long as you always start empty branch and only contain files within this branch)
+   but git branch default is a 
