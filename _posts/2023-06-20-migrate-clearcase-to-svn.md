@@ -314,6 +314,6 @@ so I wrote a very simple SASL plugin simpleldap, just filling username
 part as ldap bind path (someone suggested this is a security hole, but this
 is just enough for my usage), it's here. But unfortunately this code didn't 
 get upstream before I left that company. Since I don't have the environment for
-testing anymore, I also use intention to improve it.
+testing anymore, I also lose intention to improve it.
 
 
