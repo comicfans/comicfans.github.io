@@ -102,6 +102,75 @@ for the library,but using manual copy to expose them. This approach also
 limit the build parallelism, sine msbuild don't understand these header
 are actually came from other project, when header changed, old build script
 has to re-copy all files and rebuild all projects to make sure used header
-are all up-to-date
+are all up-to-date. cmake already provide corresponding command to satisfy this situation,
+library public header. I decide to createa 'public_include' dir for every project,
+and moving corresponding public header into it. it avoid the copy action, 
+and any header change triggered depencency rebuild can also be understood by msbuild.
+to future ease the header usage, I didn't just make it as binary library public
+include dir property, intead I create a 'library_header' library for every
+project, so these header library can be used without the binary library built,
+it can greate simplify circle dependencies problem (two libraries depends on each other's header)
+
+cleanup dll import
+
+during this migrate , I've also faced another interesting problem, sometimes 
+projects build will fail with error 'file protected' (sort of), but building C++
+projects will involve header/cpp file read, and linker will only write to their
+corresponding lib file, why such file process conflict happen ? after some digging
+I found it only failed when two projects both including a header with dll import.
+
+visual studio c++ compiler has special syntax for dll import
+you can write 
+
+```C++
+#import <msxml3.dll>
+```
+
+to include msxml3 functional, If you just build a single project and use this syntax in a header (used by some cpp from this project),
+everything seems working, but if two projects both including a single header file with this, and building simultaneously,
+they will fail with due to file process conflict (randomly), checking documents and 
+try with msvc command line, we will see that this import syntax envole some special internal process,
+msvc compiler actually create special file for every import dll file, and such file path is global unique (bind to the included header),
+for a single project build, this process only happen once,
+but if two projects include same header, such file process  will conflict.
+(msvc compiler must use file lock to avoid same path process conflict).
+for this reason, it's not recommended to use import in public headers.
+if analysis the preprocessed file by cpp we can see that, such dll import actually create a header file for the dll, 
+and use the generated header as include. so we can wrap the dll import process as a project internal process,
+and only expose the generated header, thus make header share can be used by other projec.
+with this fix, such error never happened
+
+
+cleanup  (possible) circle dependencies
+another trickly part is that old build script has one project (named A) built twice, 
+and first time build result is different to the second one. 
+this is possible for circle dependency structure library, for example
+
+libeary A feather 1 depends on library B,
+but library B depends on library A to build
+usually a stripped version of A  (without feather 1) is built (without B), to create library B,
+then A is linked again with library B , to include the missed feather 1.
+after checking the built twice project, I didn't find such requirements, 
+it just include a outdated version header of another library (B), and after A build, 
+old build script build project B, copy up-to-date header of B, then build A again,
+thus A see different header contents. I think this is due to that during two projects
+development indivdually , they don't have good method to include each other's public API header,
+so they just keep each others' header as part of their source. thus create duplication and confusing.
+with the public_header as library fix, two projects binary library can use each others' header library,
+no more outdated header, and such twice build is also stripped.
+
+fixing nastly include problem
+with my public_header approach, include dir will be stay at every library dir,
+if one library header include header depends
+on another library header, that dependencies header should also be added to include path.
+(old script put all header in a common place and use it as include dir, all needed file
+can always be found ). plus that include order is also important (for example there're different msxml usage in different project)
+they will fail the build (at best) or even built successfully but with slightly different semantic (worst).
+to resolve this problem, we can also using msbuild generated log, it records old build process,
+using its compile command record, I can replicate previous build commands, using msvc command
+I can print out the included file tree, compare it with new command file tree, and
+compare result of previous and now preprocess file, I can find out which include directoy is missing,
+know which file is included at which order, thus fix the inconsist behavior.
+
 
 
