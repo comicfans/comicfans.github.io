@@ -96,8 +96,12 @@ every project convert complete, I can verify it can build correctly and work.
 some clean up:
 
 during this convert, I also find old build script do some pre-build custom actions,
-it copies some of its header file to a common place, then later build will
+it copies some of project header file to a common place, then later build will
 use this common place as include dir. so this is the public API header
-for the library,but using manual copy to expose them. 
+for the library,but using manual copy to expose them. This approach also
+limit the build parallelism, sine msbuild don't understand these header
+are actually came from other project, when header changed, old build script
+has to re-copy all files and rebuild all projects to make sure used header
+are all up-to-date
 
 
