@@ -2,7 +2,7 @@ This is also a interesting task of my previous job,
 and also more than 5 years job before, so share this shouldn't hurt anybody
 
 building C++ project can be very complex, especially when the project got larger
-and larger. my company have such big project, it's windows project,
+and larger. my company have such big project, it's windows project, based on visual studio 2010,
 has lots of sub-project, every sub project build a lib, totally 500 sub-projects,
 more than 60000 C++ source code! since there're intra-dependencies between
 these sub-projects, we can't just build them with arbitrary order, a build script
@@ -173,4 +173,187 @@ compare result of previous and now preprocess file, I can find out which include
 know which file is included at which order, thus fix the inconsist behavior.
 
 
+Bonus of the migration:
 
+after migration, cmake can generate a contains-every-project visual studio workspace,
+with 500 projects all in it, opening it in visual studio spends very long time! plus that
+not every developer interested to find their work out of 500 projects. they usually only care about
+one of them. we can use cmake EXCLUDE_FROM_ALL property to improve this, the cmake script
+has a 'interested project' list, all other targets which not in this list will be set EXCLUDE_FROM_ALL 
+when cmake creating visual studio workspace, the top-level workspace will only show the interested
+projects, all others hidden. (there's also a build all target, which will always build all projects,
+even they're not shown in workspace). This greatly improved developer's experencie, their project
+will only show interested projects (and their dependencies). There is also a special name 'all',
+which generate the show everything workspace. 
+
+as the time of migrate, microsoft published vs2019 , which community version is free,
+and cmake also support generating vs2019 projects (but still using vs2010 toolchain ), as I tested,
+it can open 500 projects workspace much faster than vs2010. 
+
+since migrated project has complete dependencies information, it can be built in parallel, just build
+the generated vs workspace, msbuild will do both project-level parallisim and project file-level parallisim
+to improve resource utilization. but msbuild has limitation for parallel build, it treat project relationship
+and in-project file relationship as two levels, force a fixed file-level/ project-level parallel number
+upfront. for example you specify project-level parallel number = 2, and in-project file level parallel number = 8,
+idealy it should build 16 files at same time (say build machine is ideal for 16 build).
+but if one project has only 1 file, and another as 100 file, msbuild still waste resource. 
+if you try to specify very high number to avoid idle , msbuild will fire too many build process,
+which also lower down build speed (they will run out of memory, spend time in context switch,or swap in/out frequency)
+for my testing, it is better than one-by-one build, but still not best.
+the build time decreased from 2.5 hour to 1.5 hour on a 32c64t 64G build machine(if I remember correctly).
+
+Now we can try our next build tool: ninja , it doesn't have high-level concepts  
+(it doesn't know projects or workspace like msbuild),
+thus it's very simple, and dependencies can be exposed to it with best parallelisim preserved.
+simpliy switch the cmake generator to ninja, rerun cmake config,
+then we got a super low level ninja build script, let's time it!
+
+it finish all the build in ... 22 minutes, 1/7 time of old build script. 
+the build machine keeps full utilization until most library complete.
+which is very impressive. 
+
+for IDE users, cmake also support a "visual studio with ninja build" generator,
+it generate vs2019 workspace/project files, but using ninja as actual build tool,
+so you can enjoy both the IDE development environemnt and ninja build speed.
+
+22 minutes is much faster than 2.5 hour, but can it be futuer improved ?
+ninja provides a build script analysis script, to convert its build log
+into a chrome profile trace, so we can see how command target scheduled on
+ninja internal job queue, a clean build shows following trace profile:
+
+
+as we can see, after about 11 minutes, most task complete, but there's one 
+very long task, consume another 11 minutes. can we make ninja to schedule it earlier?
+firstly we have to confirm it can be schedule earlier, just do a clean build
+of this super-long task only, it completes in 13 minutes, with all of its dependencies
+complete under 2 minutes, which means reduce overall build time is possible.
+I tried author's another branch for this function, plus to support explicit build order,
+with the most time consuming task as earlier build target, finally I got 
+14 minutes build time, 1/20 time of previous build time. the ninja build trace like this:
+
+as we can see, this super long job is scheuled much earlier. now there's another
+bottomlack appeared, do clean build for this new bottomlack shows that 
+its dependencies take much longer to complete, build time almost equal to build all time,
+so we can't improve overall build time anymore.
+
+bug hunting
+
+our program are used in health care device, and has very complex user interact logic,
+so must be tested extensively to avoid any possible crash, to achive this, it has a 
+'input emulate', to inject action into system, emulate user operate, check if all
+these emulation can complete. a full test run requires 2~3 week needless running to complete.
+company use this approach to evulate if software satisify their MTBF standard.
+Today such a huge codebase requires unit testing and regression test, but for such old
+codebase (remember it has more than 20 years history!), input emulation may be
+the best solution they can use.  remember what I said before ? 
+developers can't verify whole program behavior without waiting 2.5 hours full build,
+so they just modify and submit, wait the final emulation test can pass. so many
+changeset of course introduce bugs, and now we hit a very nasty bug during emulation test.
+it crashed for about a week run, nobody knows why!
+such extensive testing only happened before production release (who wants to run a 
+2~3 week testing for lots of random submit?), nobody can tell which version introduces this bug
+(because almost nobody build whole program before submit, many history revision even can't build)
+coredump show random backtrace, debugger trapped at random place, nothing useful in log,
+we have to guess possible problem module and replace them by old versions(they're all com based,
+ABI compatible make it possible to switch between versions) , expect to narrow down
+which module has bug, but nothing found.
+
+After many failed attemps, I realize this must be memory bug, which triggered earlier
+than crash time, and lead later random crash. The only question is how to find it.
+I tried a proprietary checking method, it use runtime hooking, apply on the normal binary,
+but too slow, program startup takes 10 times slowdown, this is impossble to run to the bug!
+seems address sanitizer is the only left option.
+address santizer is a runtime memory checking technology developed by google, 
+firstly it hook memory allocation/deallocation function, remeber allocated/deallocated memory
+range information, secondly compiler will instrument every
+low level load/store instruction, replacing them by runtime checking logic. combine
+with the memory range information, it can find memory bugs, for example use after free.
+since these changes is built into final binary by compiler, its much acurrate and faster
+than other methods. we can tell cmake to use clang-cl (which supports address sanitizer)
+to build whole projects. 
+
+firstly I need to confirm clang-cl and address sanitizer do support msvc2010,
+I created a super simple program which has the use-after-free bug, built by clang-cl
+and address sanitier, it worked with msvc2019 runtime, but crash with msvc2010 runtime
+(which our project built-on), I found the address sanitizer runtime
+didn't list msvc2010 runtime as supported, then I tried to modify address sanitizer 
+runtime, add msvc2010 runtime in list, rebuild clang-cl, then rebuild my buggy test 
+code with new compiler and run it, finally the address sanitizer report the incorrect
+memroy usage! next step is to build whole project, even clang-cl declared as msvc syntax compatible, 
+it still needs some source code change, and for my company's project, it has
+500 projects and 60000 files! but I have no choice...
+ (address saniziter already support msvc2010 after I submit this problem)
+
+I spend about two weeks (maybe even more) to make whole source code clang-cl
+compatible, during this, I also find a clang-cl msvc2010 treat system include 
+path as different priority (clang-cl follow gcc prioroty behavior), which leads same command line 
+didn't give exactly same include order, thus some incomptable declaration build in 
+one order but not another. again, I got the preprocessed file of two compiler
+for comparsion to confirm this behavior difference. And I did a simple changes to clang-cl,
+to make it behaviors more like msvc. 
+
+when I complete the clang-cl compatible conversion, it already has been 1 month (maybe even more)
+during this 1 month, we run emulation test on many device, everyone with a little
+guess changes, still nothing found. And now it's time for the sanitized binary, I start it 
+and wait it running. after 4~5 days, it also crashed, but this time with address sanitizer backtrace report!
+exactly at the crash point, since address sanitizer has no false positive, it at least
+is one of the bugs! it do is a memory bug, typical use-after-free, and asan shows the detail call stack
+so I can easily understand what happend during the crash ! analysising the backtrace
+shows that this is a reentrant problem of code, a function which not designed to be reentrant
+is called recurisvly, thus its internal state already became inconsist before second entrant.
+but this is wired, since this code didn't change recently, why does it suddenly break without change ?
+future analysis shows these two entrants actually came from two different main loop, one is from MFC
+and another is from QT, so the reason became clear, we recently migrate from MFC based UI to QT,
+new code developed in QT and old code still depends on MFC, to make this work, there're two mainloop
+running in code, it worked for most case, but for some win32 windows procedure call(which is used in the 'bug' code)
+it will implictly trigger another roundtrip main loop process (since QT register its mainloop as
+window procedure), thus Qt recalled the 'bug' code , lead its crash. to verify this, we add a small
+additional protection, before calling the implicity window procedure, construct a Qt Mainloop Prevent
+object, let Qt mainloop skip. then re-deploy the original codebase (without clang-cl changes) with 
+the little fix, finally, it runs 1 week, 2 weeks... until all emulation is done. we also rerun
+the emulation again and again, never crash.
+
+built project with address santizer also discover more bugs, I also triggered another use-after-free bug,
+it's so simple and seems can't be wrong:
+
+``` C++
+    vector<POD> vec;
+    vec.push_back(vec.back())
+```
+
+In msvc2010, this is actually a use-after-free, why? address sanitizer shows that vector 
+wants to access already freed memory by using back() after a internal resizing,
+view the msvc2010 stl source code, we can see it actually called the move constructor variant of push_back,
+which means msvc2010 auto generated the move constructor for our POD type (I didn't realize 
+that msvc2010 already support move constuction), and the move construct variant push_back
+first destroy its internal buffer without realizing that the passed in parameter is just reference of 
+already freed memory 
+
+google also provides a slide to detail how address sanitizer worked, it fill memory 
+with special pattern to indicate it's freed, then load/store instrument will detect such access
+and trap into runtime. similar method can also be used in some scenario which unsupported by address sanitizer .
+for example we migrate some drawing logic from directdraw to direct2d, after the migration,
+some display code just crash, but address sanitizer didn't report any error. founatly, 
+this crash can be caught by debugger, it shows that after our bliting code writing,
+some internal memory structure already destroyed, but can't provide exactly line number of the error code,
+I still have to find it manully. address sanitizer didn't report it because it has to understand
+how the memory is used. allocating memory is just ask operation system to
+map some memory range valid to process, without knowning how this range is used,
+if such range still valid (not returned to OS, even already freed in process)
+address santizer can't know if you're read/write the bad memory (logically),
+or just do correct things (for example memory allocator can reuse the freed memory range)
+we're bliting memory into direct2d internal buffer, and these interface not supported
+by address sanitizer, it can't help us. but we can do this manually. 
+I just allocate the direct2d 1 pixel widther than blit needed. if the code
+is correct, it won't overwritten contents in the extract 1 pixel, I fill the 
+the extra 1 pixel location with special pattern, for example 0xfefefefe. 
+then assert its contents still be same after bliting , this quickly hit the assert,
+it's a classic off by one bug, it bliting more than needed thus overwritten direct2d internal state.
+but why old directdraw code didn't crash ? analysising the directdraw and direct2d
+internal buffer struture shows that directdraw return higher aligment than direct2d, 
+so everyline it has more pending bytes, previously this bliting is also buggy, 
+but it overwrite the pending bytes, thus nobody harmmed. direct2d has no pending,
+bliting overwriten 1 pixel leads the crash.
+
+so this is my experience of our build system migration and bug hunting, I hope 
+to share more interest stuff with you!
