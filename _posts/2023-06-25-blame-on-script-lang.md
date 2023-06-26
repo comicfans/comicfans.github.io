@@ -105,9 +105,106 @@ so it can't verify its correctness ahead of time, you must run to this line to k
 and once correctness does not mean such logic correctness! 
 you may think it's not a big deal, just make sure a and b single element variable makes everything work,
 but it's not! R logic is array based, code may quickly changed to make a/b any length in some other places, 
-leave this if expression invalid. and by default R also don't force crash invalid usage, for example
-if a and b are multi-value, such code will trigger R 'warning' you that only first element of array is used
-as condition, if you run big codebase, such warning quickly being ignored !
+leave this if expression invalid. and by default R also don't force crash invalid usage, 
+if a and b are multi-value, R 'warning' you that only first element of array is used as condition, 
+if you're also printing some other logs, such warning quickly ignored in headless execution.
+R also has options to treat these warnings as errors (crash immediately), 
+but even the base function in R has such warning (sqrt(-1) produce NAN also be a warning),
+not to mention that such warnings can came from any of used library. treat warning as error
+can help you quickly find bad usage in interactive usage, but not suitable for a headless run.
+
+another example of inconsistence is how zero sized array is handled, you can define a zero sized array as
+
+```R
+zero_sized_array = c()
+```
+
+now testing its properties:
+```
+length(zero_sized_array)
+is.null(zero_sized_array)
+```
+it gives you 0 and TRUE, 
+
+but if we create a none-empty array and pick zero length element out of it, result changed:
+```
+none_empty_array = c(1,2)
+zero_sized_array = none_empty_array[c()]
+```
+now testing again:
+```
+length(zero_sized_array)
+is.null(zero_sized_array)
+```
+its length is still zero, but is.null return FALSE !? why they're both zero-sized array 
+but didn't have same is.null result? print two variable, it shows that 'c()' is just NULL,
+c(1,2)[c()] is 'numeric(0)', they're different. following code
+```R
+is.null(as.numeric(c()))
+```
+return FALSE, match second output. 
+when comparing function result, c() won't be equal to numeric(0), you have to cast one to another, which is annoying.
+
+another tricky part of R is how paste (concate string together) worked. I want to add a prefix to a vector of string,
+so call
+```R
+paste("prefix", string_array)
+```
+and expect it return result with same length to string_array,
+it worked for most scenario, but string_array is a empty length array, it gives back
+
+"prefix "
+
+instead of empty array, which makes me confusing! after reading docs of paste, it does mention this behavior:
+
+```
+Vector arguments are recycled as needed, with zero-length arguments beging recycled to '""'
+```
+running behavior matched documents, but such behavior makes code ugly,
+I have to add lots of if(length(input) == 0) special handling in code, 
+This is not only paste, but also lots of R code, can't handle zero-length array well (or consist),
+zero-length array don't make any differences to other ones, 
+even library code didn't handle them correctly,
+such code will continue to run, until some random place which such result is a hard error, trap at meaningless stack,
+or even worse, gives back unexpected result without your notice. 
+
+R also has a 'helpful' feathure, when you slicing from high-dimension array, it will auto drop the size1 dimension of the result,
+for example you have a 3x4 matrix, picking 2x1 from it doesn't result a 2x1 matrix, instead you got a length 2 array,
+that may seems reasonable for simplify, but nightmare for headless run,
+because depends on how length is picked (which is parameter controlled ), result array can be completely different,
+but later process code expect this result have fixed layout!  (use drop = F avoid this but requires additional code)
+
+Such inconsistenc appeared everywhere in R, for example sort return sorted result as array, but if you 
+pass index.return  = TRUE, the result turned into a list which contains the sorted result and the index.
+
+This is not simply a complaint on R language, I just realize that what I'm complainting is not a problem
+for interactive usage, because you viewed every step output, such bugs can be easily discovered during
+running. but for headless execution is completely different, youd don't have oppotunity to view every step output, 
+so you must 'predict' program behavior, but script language usually is weak typed, there's no restriction on
+variable real type, thus make such prediction in weak typed language much, much harder than static typed language.
+
+In theory, if you express exactly same logic in different language (as long as they're turing complete),
+it makes no differences between their behavior, and weak type language can omit type declaration,
+easier to write, without need to compile ahead of time, why not written whole software in it?  
+Unfortunately in practical this is completely different. software always evuluate, with more and more function added,
+most of time you're evluting/maintain it, instead of writing all the function at once. for this reason,
+you're 'changing' software behavior, and these requires some verify process, how can you assume
+changed software still keep their existing behavior correct? how different developers can understand each other's logic?
+and more specified, why we're using computer ?
+
+The answser is that human are lazy, they want the computer to handle as much as possible for them.
+weak typed language are trying to achive it by let developer delay the type decision time, 
+strong typed language are trying to achive it by let compiler checking the contract of developer's type decision.
+weak typed language seems easier to write, but does that mean it really get rid of type ? of course not!
+you can only iterate read/value pair over a map, not over array; file-liked object can be read bytes from, 
+but such read is meaningless on a function. even we don't write the exactly type of variable,
+we're expecting the type of variable. because without knowing the type, we can do nothing meaningful.
+(some language let you call most common functions like hash/ to_string), and the challenge of weak typed language became: 
+can you remember every type your code expect it to be ?
+for a simple project, you may remember everything, but when codebase became larger and larger, 
+when you need to share work with others, this quickly exploded. and due to fact that weak typed language
+don't restrict variable have always same type, your REPL result may lie to you  (just like the R sort function changed return type)
+
 
 
 
