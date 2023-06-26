@@ -2,28 +2,27 @@ Disclaimer: this is mostly my complaint at work, shouldn't be considered serious
 
 I've worked with low-level language before, mostly C/C++ , also have some years
 experience of java development. recently I tried rust and go, as you can see,
-they're all strong-typed, compiler checked language. I do use script language like 
+they're all static-typed, compiler checked language. I do use script language like 
 python and javascript, just for write-once and throw up purpose, never use them
 to create serious project. And for some reason, we have to use R language in our work,
-for that we need to maintain a R codebase.
+because we need to maintain a R codebase.
 
-Let me give a short introduction of R language: it's a interpreted, weak type, GC language,
+Let me give a short introduction of R language: it's a interpreted, dynamic typed, GC language,
 it has good support for statistics and data analysis.  The main difference of R and most other
 language is that its builtin type are always array, even a single number is just a 
-one length array. and all operators are also array based , for example a + b do a element wise
+one length array. and all operators are also array based , for example a + b does a element wise
 add. 
 
 we use this codebase for some data research, this worked well, and I think R has a killer
 feather (for programmer), it's fully interpreted, even for its built-in debugger,
-which means even when you're already trap at R built-in debugger , you can recusively 
-call into some R code and trap at the breakpoint again. other script language, for example
-python, when you trap at breakpoint, then you call the outer function (which contains breakpoint),
+which means you're already trap at built-in debugger , you can recusively 
+call into some R code and trap again at the breakpoint again. other script language, for example
+python, when you trap at breakpoint, then you call the function which contains breakpoint,
 it will evulate the result, but won't trap again recusively. for some time consuming debugging,
-the code you want to debug may just passed by, but re-run requires much longer time,
-R debugger let you breakpoint on the passed by function, and then re-call it to trap immediately.
+the code you want to debug may just passed by, re-run requires much longer time,
+R debugger let you breakpoint on the passed by function, and then re-call it to trap again immediately.
 since this trap can be recusively, you can inspect the function easily, repeatly. This greate
 improved the interactive development experience.
-
 
 
 And to reuse these R code in other places, we decide to make some of our R logic run
@@ -162,11 +161,14 @@ Vector arguments are recycled as needed, with zero-length arguments beging recyc
 ```
 running behavior matched documents, but such behavior makes code ugly,
 I have to add lots of if(length(input) == 0) special handling in code, 
-This is not only paste, but also lots of R code, can't handle zero-length array well (or consist),
-zero-length array don't make any differences to other ones, 
-even library code didn't handle them correctly,
-such code will continue to run, until some random place which such result is a hard error, trap at meaningless stack,
+This is not only paste, but also lots of R code, they can't handle zero-length array well (or consist),
+and zero-length array don't make any differences to normal ones, 
+logic just continue to run, until some random place which triggered a hard error, trap at meaningless stack,
 or even worse, gives back unexpected result without your notice. 
+This is also the case for how most R function handle invalid parameter input,
+they work well for expected input, but crashing at random location for invalid input.
+to resolve similar problem, our logic add many input checking logic,
+for example test their type/shape as expected, and detecting invalid special value (NA/NULL)
 
 R also has a 'helpful' feathure, when you slicing from high-dimension array, it will auto drop the size1 dimension of the result,
 for example you have a 3x4 matrix, picking 2x1 from it doesn't result a 2x1 matrix, instead you got a length 2 array,
@@ -177,34 +179,95 @@ but later process code expect this result have fixed layout!  (use drop = F avoi
 Such inconsistenc appeared everywhere in R, for example sort return sorted result as array, but if you 
 pass index.return  = TRUE, the result turned into a list which contains the sorted result and the index.
 
-This is not simply a complaint on R language, I just realize that what I'm complainting is not a problem
-for interactive usage, because you viewed every step output, such bugs can be easily discovered during
-running. but for headless execution is completely different, youd don't have oppotunity to view every step output, 
-so you must 'predict' program behavior, but script language usually is weak typed, there's no restriction on
-variable real type, thus make such prediction in weak typed language much, much harder than static typed language.
+I realized that what I'm complainting is not a problem for interactive usage,
+when viewed every step output, such 'bugs' can be easily spoted (actually 
+these are 'feathures' to improve interactive experience). it has so many 'easy to use'
+feature but in headless execution this just makes everything more complicit.
+In headless execution you don't have oppotunity to view every step output(such code may run 
+millions times with many different input parameter), so you must 'predict' program behavior,
+and for predictable, consist behavior (even it's more complicit) is much more important than 
+easier(but inconsist) usage. Since script language is (almostly) dynamic-typed,
+there's no restriction on variable's type, thus make such consist behavior
+prediction much, much harder than static typed language. This makes dynamic-typed
+language not suitable for big scale codebase and none-interactive usage. 
 
+Another minor(maybe major) problem is that IDE can't provide very helpful completion suggestion
+for dynamic-typed language, since even the language itself don't know the actual
+type of variable until runtime, of course IDE don't know what they should suggest!
+oh the other hand static-typed language have all variable type defined at compile time,
+IDE can easily understand what action your code is allowed to do, thus give
+very percisie suggestion. If the suggestion engine and language have tight integration,
+It can even provide almost correct suggestion.correct here doesn't mean correct logic,
+it means the suggested code are always able to pass the compiler-check, but that's also
+a big improvement for developing.
+
+This is not simply a complaint on R language, I've also used other script languages before,
+but never maintain such scale codebase for so much headless usage.
 In theory, if you express exactly same logic in different language (as long as they're turing complete),
-it makes no differences between their behavior, and weak type language can omit type declaration,
-easier to write, without need to compile ahead of time, why not written whole software in it?  
+it should make no differences between their behavior, and dynaimic type language omit type declaration,
+easier to write, without need to compile ahead of time, why not write whole software in it?  
 Unfortunately in practical this is completely different. software always evuluate, with more and more function added,
-most of time you're evluting/maintain it, instead of writing all the function at once. for this reason,
-you're 'changing' software behavior, and these requires some verify process, how can you assume
-changed software still keep their existing behavior correct? how different developers can understand each other's logic?
-and more specified, why we're using computer ?
+most of time you're evluting/maintain it, instead of writing all the function to its final state at once.
+for this reason, you're keeping 'changing' software behavior, and these requires some verify process,
+to assume such modification not break existing logic, and different developers need to understand each other's work.
+documentation, code review, testing can help this, but the language feathure itself, is also important.
+so why are we using programming language, and more specified, why are we using computer?
 
-The answser is that human are lazy, they want the computer to handle as much as possible for them.
-weak typed language are trying to achive it by let developer delay the type decision time, 
-strong typed language are trying to achive it by let compiler checking the contract of developer's type decision.
-weak typed language seems easier to write, but does that mean it really get rid of type ? of course not!
-you can only iterate read/value pair over a map, not over array; file-liked object can be read bytes from, 
+I think the answser is that human are lazy, we want the computer to handle as much as possible for us.
+dynamic/static-typed language choose different approaches:
+dynamic-typed language try to simplify variable type declaration, let developer delay the type decision to runtime.
+static-typed language try to let compiler checking the behavior of developer's decision, by require developer decide the type up front.
+
+Developers found it's easier to use variables without declaring type, 
+but does that mean you really don't care about the type ? of course not! 
+you can only iterate key/value pair over a map, not over array; file-liked object can be read bytes from, 
 but such read is meaningless on a function. even we don't write the exactly type of variable,
-we're expecting the type of variable. because without knowing the type, we can do nothing meaningful.
-(some language let you call most common functions like hash/ to_string), and the challenge of weak typed language became: 
-can you remember every type your code expect it to be ?
-for a simple project, you may remember everything, but when codebase became larger and larger, 
-when you need to share work with others, this quickly exploded. and due to fact that weak typed language
-don't restrict variable have always same type, your REPL result may lie to you  (just like the R sort function changed return type)
+we still have to assume type of variable is expected. without knowing the type, we can't do anything meaningful.
+(you may call some common functions like hash_code/ to_string, but that doesn't help)
+
+so the hard part of dynaimc-typed language became: 
+can you remember every type your code expect it to be? can you keep all these types correct all the time? without type declaration? 
+My experience is that even I've read whole source code multi times, I still need runtime verification to know
+the exactly type of variable. And when you need to share works with others, this workflow quickly exploded.
+and dynamic-typed language don't restrict variable being always same type
+(just like R sort changed result type depends on input parameter), your REPL result isn't always true.
+not to mention that many runtime behavior can't be easily run in REPL.
+to overcome this, even dyanmic-typed language are introducing type declaration, for example  
+dropbox has a blog which share the similar point at 2019-Sep 
+[Our journey to type checking 4 million lines of Python](https://dropbox.tech/application/our-journey-to-type-checking-4-million-lines-of-python):
 
 
+```
+Once your project is tens of thousands of lines of code, and several engineers work on it, our experience tells us that understanding code becomes the key to maintaining developer productivity. Without type annotations, basic reasoning such as figuring out the valid arguments to a function, or the possible return value types, becomes a hard problem
+```
 
+Dropbox also submitted their type hint proposal as PEP-484, and today we can see
+many python code have variable type declaration (even it's still dynamic typed).
 
+static typed language force you to declare type upfront and won't change it during runtime,
+it also requires lots of code modifications when you change logic or type,
+this seems more time-consuming, but actually it moved the runtime break into 
+compile time error, because incompaitble type/usage is forbidden in static-type language (
+even during execution such logic won't being called) for dynamic-typed language,
+such incompaitble problem only triggered at runtime, or even worse,
+incompatible function not being called at runtime without anybody notice,
+or given silent incorrect result without crashing.
+
+Another interesting thing is that while dynamic-typed language are introducing type declaration,
+which make it more alike static-typed language, static-typed language are also introducing type infer,
+let developer can omit some variable type declaration (if not all), thus make them alike
+dynamic-typed language.  for example
+
+```C++
+    std::vector<std::map<std::string, std::set<int> >>::iterator it = container.begin();
+```
+
+became
+
+```
+    auto it = container.begin();
+```
+
+while type still being static, this is still reduce lots of code. but this also brings the problem
+of dynamic-typed language, compiler know the exactly type, but your source code don't! 
+some IDE provides type inlay hint function, I think this is a balance point for code simplification and
