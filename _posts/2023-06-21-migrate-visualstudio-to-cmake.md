@@ -73,8 +73,9 @@ what I have to do:
    exactly same as visual studio build 
 
 since there're 500 projects, find out dependencies between them is time consuming,
-actually there's a simple way for this: visual studio build will generate logs 
-for its build steps, this log includes link command, after excluding most used
+actually there's a simple way for this: visual studio build will generate logs,
+(which named tlog under build dir)for its build steps, this log includes 
+link command, after excluding most used
 system libs (for example win32 and mfc libraries), all left libs are just built
 by our projects, for example project A linked library B , we know project A
 depends on project B. after extracting these information from build link log, 
@@ -83,6 +84,9 @@ we know the correct dependencies.
 we can extract more useful information from the build log, it contains 
 compile flags, so we can also extract them, cataloged them together,   
 to generate a cmake script template. with mapping the library name directly to project name
+I can generate which libraries it linked to, and it also includes information
+of compiler input files, which including the source files,
+so we can list these source files as cmake project sources. and now
 I got a cmake script converter, it reads msbuild log, set necessary build flags
 and link libraries, catalog common used flags as dependencies (for example
 when you link unicode MFC, it will add some compile/link flags), and Bang, 
@@ -184,7 +188,8 @@ when cmake creating visual studio workspace, the top-level workspace will only s
 projects, all others hidden. (there's also a build all target, which will always build all projects,
 even they're not shown in workspace). This greatly improved developer's experencie, their project
 will only show interested projects (and their dependencies). There is also a special name 'all',
-which generate the show everything workspace. 
+which generate the show everything workspace. this allow developer to build whole workspace, but still
+focus on their specified project.
 
 as the time of migrate, microsoft published vs2019 , which community version is free,
 and cmake also support generating vs2019 projects (but still using vs2010 toolchain ), as I tested,

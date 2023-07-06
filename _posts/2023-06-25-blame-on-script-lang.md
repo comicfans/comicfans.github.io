@@ -1,11 +1,11 @@
 Disclaimer: this is mostly my complaint at work, shouldn't be considered seriously (some sort of)
 
 I've worked with low-level language before, mostly C/C++ , also have some years
-experience of java development. recently I tried rust and go, as you can see,
+experience of java development. Recently I tried rust and go, as you can see,
 they're all static-typed, compiler checked language. I do use script language like 
-python and javascript, just for write-once and throw up purpose, never use them
+python and javascript, just for one-shot and throw-up usage, never use them
 to create serious project. And for some reason, we have to use R language in our work,
-because we need to maintain a R codebase.
+because we need to import an existing R project as part of our codebase.
 
 Let me give a short introduction of R language: it's a interpreted, dynamic typed, GC language,
 it has good support for statistics and data analysis.  The main difference of R and most other
@@ -13,84 +13,190 @@ language is that its builtin type are always array, even a single number is just
 one length array. and all operators are also array based , for example a + b does a element wise
 add. 
 
-we use this codebase for some data research, this worked well, and I think R has a killer
-feather (for programmer), it's fully interpreted, even for its built-in debugger,
-which means you're already trap at built-in debugger , you can recusively 
-call into some R code and trap again at the breakpoint again. other script language, for example
-python, when you trap at breakpoint, then you call the function which contains breakpoint,
-it will evulate the result, but won't trap again recusively. for some time consuming debugging,
-the code you want to debug may just passed by, re-run requires much longer time,
-R debugger let you breakpoint on the passed by function, and then re-call it to trap again immediately.
-since this trap can be recusively, you can inspect the function easily, repeatly. This greate
-improved the interactive development experience.
+We use this codebase for lots of data analysis, This improved my interactive
+programming skills a lot, makes me rediscovered script language. Although I
+also used chrome dev console to do some quick interactive jquery test,
+but all of them are still one line try and throw temp code, I haven't tried
+long context interactive programming.
+
+At first it makes me feel 'uncomfortable', in static-typed language,
+(which mostly pre-built ) I'll write lots of code, and predict
+how my whole code will be acting, run all code at once, when error happened, 
+do edit-build-rerun circle. But such flow works very badly in R, since some of the analysis
+logic are very time-consuming and flexible, whether to apply some analysis is 
+depends on previous step result, I can't predict whole logic in front,
+and any bug/changes led me to waste lots of time (even some result of intermediate step
+can be reused), so I tried to give up source coding and just run logic in R console. 
+
+then it makes me feel 'forgettable', without source code for reference,
+it requires me to very focus on context, it does not only requires me
+to write code at where I am, but also requires me to remember almost everything
+what I've written (I don't use jupter book alike editor since its operations
+differ to vim too much), I quickly lost the track.
+Therefor I tried to combine advantages of editor and console together,
+to mimic jupter book alike experience. So I write short code snippet in temp source file, still using vim,
+then using nvim-R plug to quickly send these lines to R console.
+After I can quickly operate these basic blocks, my development experience
+got much improved: history logic still kept in source code, all my vim skills
+still apply, and I can run any block of these code easily.
+
+After some days usage, development became 'enjoyable',  I don't run lots of 
+code at once, instead I just run little piece of them in console, to verify result,
+decide what to do, then try next block ... since all intermediate result is kept ,
+I can easily reuse them to try different analysis, avoid lots of time waste.
+I realized that such try-and-run development is much faster than my traditional
+run-from-beginning workflow. It feels like I'm running a super powerful
+debugger in any local scope, and it has exactly same language syntax support,
+which is unimaginable for pre-built languages!  (today gdb/lldb are still trying to merge more
+c++ syntax/ast support , since they can't eval complex expression)
+and in such console you never need to worry about missing critical expression result in debugger,
+just re-evalute expression again, result pop immediately, no need to reproduce 
+the scene, it feels so convenient! Script language also mostly design their 
+basic/composite type viewed as string directly in console, inspecting variable makes much easier.
+now I can quickly write/verify my code, piece by piece, instead of predicting
+too much context at once. 
 
 
-And to reuse these R code in other places, we decide to make some of our R logic run
-headlessly every day, do some data update logic, suddenly all sort of bugs pop,
-while developing and debugging these code, all the F word jump into my brain...
+And I think R has a killer feather (even among script languages),
+that the built-in debugger is also fully interpreted (makes no differences to 
+the code it's debugging), which means you've already trap in debugger ,
+you can still call some R code with breakpoint in it, from current debugger!
+then you will be recursively trap into debugger again. In other script languages,
+for example python, when trap in pdb, you can evaluate python code, but if
+the evaluated code contains breakpoints, it won't trap again recursively.
 
-first problem is that when crashing during script mode execution (run with Rscript instead of R console interactive),
-R can't show crash stack filename and line number, it just gives a function name call chain like:
+
+This may seem a little wired at beginning,  but actually very useful in practice.
+While debugging complex logic, you may want to inspect multiply involved function's 
+behavior, with different arguments to current debugging context (maybe 
+the function you want to inspect is a unrelated function and 
+even not being used in current debugging context).
+then you can just set breakpoint on that function, call it with arguments
+whatever you want, then you immediately dropped into new debug context,
+with all expected input.
+
+another usage is for repeat debugging one logic, for example you already run over
+a line (maybe by mistake, or you just return from it but wants to debug it again),
+you can just repeat call this logic in debugger, trap time by time endlessly.
+This makes R debugging much easier to use than other languages, 
+and for this reason I debug R code much more frequency, and feel that I can understand 
+whole codebase more clear than using other languages. Since their debuggers can only
+step over fixed debug path, I have to spend more time on constructing different entries
+(for example testcases) to trigger different path debugging.
+of course you can always use REPL to run different codes, but complex logic
+have deeply nested function calls, debugging whole stack into most function
+requires you to paste almost every lines through the code path. Such debugging
+is much harder than R. 
+
+
+The headache of interactive programming.
+
+we also faced some headaches, the most critical one is result reproducible.
+When sharing code between workmates,
+we hit lots of result-mismatch/code-cant-run problems, even in my personal
+environment some code don't produce same result between runs, or even don't work
+at next run, which is very annoying. After debugging again and again, 
+we realized that interactive programming has a very big drawback:
+** every variable in current scope became global variable**.
+we does not only enjoy the quick REPL experience, but also doing the 
+'global variable considered harmful' practice. these variables names
+coverages all the common name I used (because they're just named by me after 
+long time running...), so even I run a function call with typo arguments,
+it may still run and even give a very good result ! Unfortunately this doesn't
+raise any error. After combined pieces of codes together and rerun, suddenly
+all sort of bugs pop: mismatched function call, bad variable name …
+so usually we reinitialize workspace after after code combined, 
+then rerun combined code, to make sure it really does what it expected to do.
+and we must be careful when run long-time calculation, it easily waste bunch
+of hours/days to get incorrect result.  
+
+Another weakness of R lang is parallel support, it doesn't have builtin
+threading support, there do exist some libraries to utilize more system source
+(using forking or multi process model), but as expected, 
+this leaks implementation details of low level OS behavior to languages. It looks like 
+'just change apply to future.apply should accelerate my code', but in reality
+for developers who just do copy-paste found it slower than normal code (
+threading library auto switched to multi-process model when it
+detected it's running under Rstudio which is incompatible with threading, and
+library spend all the time to transfer big object which is accessed
+by parallel part of code) breakpoint/crash don't trap anymore(debugger only works in main console thread),
+write to global variable doesn't take effect (they're just writing to forked memory space).
+At last, developers who don't care about too much system detail just give up
+using parallel, they find it too hard to use (funny enough they're deciding
+to migrate to python, which suffer from GIL problem)
+
+
+If the problem I mentioned is not the worst, using R headless is real nightmare.
+To reuse most R logic in other places, we decide to make these logic run
+headless every day, do some auto-data-update, more and more tricky bugs pop,
+while developing and debugging these code,  the 'uncomfortable' feeling came
+back and all the F word jump into my brain...
+
+first problem is that when running R source with Rscript in command headless (instead
+of running in R console interactively) , R don't show crash stack filename and line number!
+it just gives a super-simplified call chain like:
 
 ```
 apply->functiona-> paste-> ...
 ```
 
-instead of normal script language crash stack
+instead of normal interactive debugging display:
 ```
 file1: line 234: apply
 file2: line 456: functiona
 file3: line 789: paste
 ```
 
-This does not make any sense! R console already show full backtrace filename line number and function name, 
+This does not make any sense! R console already show full backtrace , 
 why script run have none of this ? I've asked this question on R-devel mailing list, seems nobody cares.
-plus that even such simplified function name call chain,
-R will omit parts of it! when you have long call chain, your output will be like this:
+and even such simplified call chain, R will omit parts of it! 
+when you have long call chain, your output will be like this:
 
 ```
-apply->functiona->paste-> ...    functionb -> functionc-> ...
+apply->functiona->...    functionb -> ... paste
 ```
 
-yes, the three dots is not omitted by me, it's the output of R script.
-R knows what exactly information is , but it won't tell you, you have to do fuzzy match and guess!
-it's better than nothing output, but seems more like a joke.
+yes, R script just replace some of the name with three dots,
+you have to do fuzzy match and guess! it's better than nothing output, but seems more like a joke.
 
 Another approach I tried is the 'dump' function, set dump as error function, it will save
 whole running workspace as a file, which can be loaded later for debugging, just like coredump.
 but our R data update logic loads lots of data, even the smallest dump will take minutes 
-to complete, and saved file is multi-GB, which is not pratical. so we have to repeat running
-our code in Rconsole, to find which location the code crashed.
+to complete, and create multi-GB file, which is not practical. So we have to repeat running
+our code in Rconsole, to identify the crash location.
 
-while debugging R crash, it shows another funny behavior: R console do output
-filename, line number and function name, but the stack level is incorrect! 
-I don't know how this is implemented, at least for other languages, if I want to go to some
-stack level shown by stack trace, I just pick filename/line number/function I'm interested at,
-enter the corresponding number, then I got that stack. but for R, this never worked,
-the number you enter is always one level higher, or lower than shown line, everytime I have to 
-guess it, using variable list and source code to confirm I'm at the correct stack location!
-and R sometimes do lazy evolute, so the call stack order may be inversed, that makes 
-your logic much harder to debug! for example in normal calling order, you call
+
+I've written lots of R debugging advantages, but it also has a funny behavior:
+R debugger do output filename, line number and function name, but the stack level is incorrect! 
+I don't know how this is implemented(maybe due to that R debugger is also interrupted?),
+at least for other languages, if I want to go to target stack level shown by stack trace,
+I just enter the corresponding number of the function line I interested,
+then I got that stack. but for R, this never worked,
+the number you enter is always one level higher/or lower than shown line, I have to 
+guess it everytime, using variable list and source code to confirm I'm at the correct stack location!
+and R sometimes do lazy evaluate, so the call stack order may also be inverse, that makes 
+logic much harder to debug! for example in normal calling order, you call
 
 ```R
 f(g(h()))
 ```
 
-h is called first, then g, then f at last.  I call this 'normal' because if view the callsite as dependencies 
-DAG,  f depends on g, g depends on h, so the most dependency (h) should be avaiable first,
-otherwise other node don't have neccessary input. Any error happened in h should break immediately, 
-before later g call (and of course f call), because later node don't have neccessary input.
-but in lazy evulate, h call actually happened when the h output is accessed by g call,
-and g call actually happened when the g output is accessed by f, so the running order is that f runs first,
-it access a variable of g output, which leads g is called, and same thing happened , h is called last!
-so the backtrace will show f and g first, but the bug actually happened in h! 
-and such lazy evualte implicts another pontential problem, it will hide the buggy logic if that result is
-not accessed! your code f seems worked for a long time, makes you think any of its input (g and h) also workes,
+h is called first, then g, then f at last.  I call this 'normal' because if view this callsite as a 
+data flow, the output of h flow into g, then output of g flow into f,
+so the root node h should run first, otherwise other node don't have necessary input.
+Any error happened in h should break whole flow immediately, because later node don't have necessary input.
+but in lazy evaluate, h call actually happened when the h output is accessed by g call,
+and g call actually happened when the g output is accessed by f, so the running order is that :
+f runs first, it access a variable of g output, leads g is called, and h is called last!
+so the backtrace will show backtrace of f and g first, but the bug actually happened in h! 
+combined with normal evaluated order functions, some debugging became hard to understand.
+such lazy evaluate implicates another potential problem, it will hide the buggy logic if that result is
+not accessed! code f seems worked for a long time, makes you think any of its input (g and h) also workes,
 but actually g or h never run.
 
 
 another problem of R is consistence, although its built-in type is array based,
-but function based on these concept don't give consist result. for example in other language
+but function based on these concept don't give consist result. For example in other language
 you may write 
 
 ```
@@ -99,20 +205,20 @@ if(a > b) {
 }
 ```
 
-in R the if expression only accept a single value, but R can't tell a or b is single-value or not(single value are just 1 element array),
+in R the "if" expression accept only a single value, but R can't tell a or b is single-value or not(single value are just 1 element array),
 so it can't verify its correctness ahead of time, you must run to this line to know if it worked or not,
-and once correctness does not mean such logic correctness! 
-you may think it's not a big deal, just make sure a and b single element variable makes everything work,
-but it's not! R logic is array based, code may quickly changed to make a/b any length in some other places, 
+and once correctness does not mean such line always correctness! 
+you may think it's not a big deal, just pass a and b as single element variable makes everything work,
+but it's not! R is array based, code may quickly changed to make a/b any length in some other places, 
 leave this if expression invalid. and by default R also don't force crash invalid usage, 
 if a and b are multi-value, R 'warning' you that only first element of array is used as condition, 
 if you're also printing some other logs, such warning quickly ignored in headless execution.
 R also has options to treat these warnings as errors (crash immediately), 
-but even the base function in R has such warning (sqrt(-1) produce NAN also be a warning),
-not to mention that such warnings can came from any of used library. treat warning as error
+but even the base function in R has lots of such warnings (sqrt(-1) produce NAN also be a warning),
+such warnings can also came from any of used library. Treat warning as error
 can help you quickly find bad usage in interactive usage, but not suitable for a headless run.
 
-another example of inconsistence is how zero sized array is handled, you can define a zero sized array as
+another example of inconsistency is how zero sized array is handled, you can define a zero sized array as
 
 ```R
 zero_sized_array = c()
@@ -144,7 +250,7 @@ is.null(as.numeric(c()))
 return FALSE, match second output. 
 when comparing function result, c() won't be equal to numeric(0), you have to cast one to another, which is annoying.
 
-another tricky part of R is how paste (concate string together) worked. I want to add a prefix to a vector of string,
+another tricky of R is how paste (concate string together) worked. I want to add a prefix to a vector of string,
 so call
 ```R
 paste("prefix", string_array)
@@ -168,7 +274,8 @@ or even worse, gives back unexpected result without your notice.
 This is also the case for how most R function handle invalid parameter input,
 they work well for expected input, but crashing at random location for invalid input.
 to resolve similar problem, our logic add many input checking logic,
-for example test their type/shape as expected, and detecting invalid special value (NA/NULL)
+for example test their type/array shape is expected, and actively reporting 
+invalid special value (NA/NULL)
 
 R also has a 'helpful' feathure, when you slicing from high-dimension array, it will auto drop the size1 dimension of the result,
 for example you have a 3x4 matrix, picking 2x1 from it doesn't result a 2x1 matrix, instead you got a length 2 array,
@@ -268,6 +375,69 @@ became
     auto it = container.begin();
 ```
 
-while type still being static, this is still reduce lots of code. but this also brings the problem
-of dynamic-typed language, compiler know the exactly type, but your source code don't! 
-some IDE provides type inlay hint function, I think this is a balance point for code simplification and
+while type still being static, this still reduces lots of code. but this also brings the problem
+of dynamic-typed language, you easily forgot type since they're not in source code anymore.
+someone suggested to only use type infer on most obvious type to keep source code more readable.
+I personally prefer IDE inlay hint function. when you open source code in IDE, 
+editor will display type of every variable. This is not only useful for the type infer, it also
+display function argument and return type, helps you to better understand code in their context.
+
+
+Error handling in different languages
+
+some languages using return code for error handling, for example
+C/(and some C++), developer have to check result of every function call
+(or check a special errno variable )to determine if they're hitting error 
+condition, which is error-prone if developer forgot checking or 
+compare it to incorrect values.
+
+In go lang, forgot checking the error variable is a hard error 
+(other languages usually treat unused variable as soft warning and let such
+potential bug happen at runtime). rust also use return value,
+it wrap normal return value into a Result type,
+developer must explicitly 'unwrap' the Result type to get correct value or
+read the error, rust also provide a syntax sugar to shortcut such handling.
+
+
+most other modern languages use exception handling, 
+which don't require handling logic exactly match every function call, instead, 
+such handling can contains many function call, any unhandled exception
+will immediately stop current stack execution and unwrap stack up recursively,
+until matched handler found. it allows error handling code 
+decoupled from where error happened, makes normal codepath clean,
+but also requires handling logic match the actual exception spec.
+if logic handle FileNotFound exception, but the code actually throws
+FileCantOpen exception, although two errors are very similar, such handle
+logic won't work. Such logic/exception match requires language support,
+and for my personal experience, I think java exception handling is great.
+
+Firstly java clearly distinct 'Unchecked Exception' and 'Checked Exception',
+unchecked exception are used for programming logic error, for example dereference
+null pointer or access out of range array index,such exception should be fixed at
+source code level, instead of being handled during runtime, thus any of such
+catalog exception don't (and shouldn't ) requires explicit handle, 
+OTOH 'Checked Exception' to indicate the error only possible to be handled properly
+during runtime, for example most IO exception. Java also force 
+Checked exceptions must be declared as part of method signature, which means
+it's impossible to missed such exception handling (otherwise code won't build),
+or you declare it and let caller handle it. Such restriction greatly reduce
+the potential mismatched error handle logic.
+
+but script language usually don't have such strict declare requirements,
+extra code is one reason (which conflicts to simple usage goal),
+another reason is also that most script language is dynamic
+typed, even the interpreter don't have enough type information until runtime,
+thus it can't precisely verify code do-or-not follow the declaration.
+
+This leads exception handling in script language very weak, 
+almost any code is possible to throw any exception without any source hint, 
+developers have to read documents to know what to handle, 
+and most importantly, any mismatch led mis-behavior won't get any notice!
+
+Here I may understand differences between languages deeper:
+their trade-off does not only apply to easy or hard to use, different api call,
+but also impacts how developers construct their logic, how they maintain codebase.
+
+
+
+
