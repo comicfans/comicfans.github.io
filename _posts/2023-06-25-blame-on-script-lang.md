@@ -100,31 +100,33 @@ we realized that interactive programming has a very big drawback:
 ** every variable in current scope became global variable**.
 we does not only enjoy the quick REPL experience, but also doing the 
 'global variable considered harmful' practice. these variables names
-coverages all the common name I used (because they're just named by me after 
+coverages all the common ones I used (because they're just named by me during
 long time running...), so even I run a function call with typo arguments,
-it may still run and even give a very good result ! Unfortunately this doesn't
-raise any error. After combined pieces of codes together and rerun, suddenly
-all sort of bugs pop: mismatched function call, bad variable name …
-so usually we reinitialize workspace after after code combined, 
-then rerun combined code, to make sure it really does what it expected to do.
-and we must be careful when run long-time calculation, it easily waste bunch
-of hours/days to get incorrect result.  
+it may still run and even give result ! Unfortunately such mismatch doesn't
+raise any error. After combined pieces of codes together and rerun, 
+all these sort of bugs pop: mismatched function call, bad variable name …
+so we frequency reinitialize workspace and rerun combined code,
+to make sure it really does what we expected it to do.
+and we must be careful before running long-time calculation, it easily wastes bunch
+of hours/days to get just incorrect result.  
 
 Another weakness of R lang is parallel support, it doesn't have builtin
 threading support, there do exist some libraries to utilize more system source
 (using forking or multi process model), but as expected, 
 this leaks implementation details of low level OS behavior to languages. It looks like 
-'just change apply to future.apply should accelerate my code', but in reality
-for developers who just do copy-paste found it slower than normal code (
-threading library auto switched to multi-process model when it
-detected it's running under Rstudio which is incompatible with threading, and
-library spend all the time to transfer big object which is accessed
-by parallel part of code) breakpoint/crash don't trap anymore(debugger only works in main console thread),
-write to global variable doesn't take effect (they're just writing to forked memory space).
-At last, developers who don't care about too much system detail just give up
-using parallel, they find it too hard to use (funny enough they're deciding
-to migrate to python, which suffer from GIL problem)
+'change apply to future.apply is enough', but in reality
+developers who just do copy-paste found it 
 
+* became even slower. Because threading library switched to multi-process model when it
+detected it's running under Rstudio(which is incompatible, with threading) ,
+and parallel part of code access big global variable, so such big variable
+must be transfer to different process.
+* breakpoint/crash don't trap anymore, because Debugger only works in main console thread,
+* write to global variable doesn't take effect, because they're just writing to forked memory space.
+
+At last, developers who don't care about too much system detail 
+find it too hard to use and give up(funny enough they're deciding
+to migrate to python, which suffer from GIL problem).
 
 If the problem I mentioned is not the worst, using R headless is real nightmare.
 To reuse most R logic in other places, we decide to make these logic run
@@ -132,23 +134,24 @@ headless every day, do some auto-data-update, more and more tricky bugs pop,
 while developing and debugging these code,  the 'uncomfortable' feeling came
 back and all the F word jump into my brain...
 
-first problem is that when running R source with Rscript in command headless (instead
-of running in R console interactively) , R don't show crash stack filename and line number!
-it just gives a super-simplified call chain like:
-
-```
-apply->functiona-> paste-> ...
-```
-
-instead of normal interactive debugging display:
+First problem is that when running R source with Rscript in command headless (instead
+of running in R console interactively) , R don't show meaningful crash stack!
+instead of normal interactive debugging stack display:
 ```
 file1: line 234: apply
 file2: line 456: functiona
 file3: line 789: paste
 ```
 
-This does not make any sense! R console already show full backtrace , 
-why script run have none of this ? I've asked this question on R-devel mailing list, seems nobody cares.
+
+it just gives a super-simplified call chain like:
+
+```
+apply->functiona-> paste-> ...
+```
+
+This does not make any sense! why script run have none of this?
+I've asked this question on R-devel mailing list, seems nobody cares.
 and even such simplified call chain, R will omit parts of it! 
 when you have long call chain, your output will be like this:
 
@@ -156,8 +159,8 @@ when you have long call chain, your output will be like this:
 apply->functiona->...    functionb -> ... paste
 ```
 
-yes, R script just replace some of the name with three dots,
-you have to do fuzzy match and guess! it's better than nothing output, but seems more like a joke.
+yes, R script just hide parts of them, you have to do fuzzy match and guess!
+it's better than nothing output, but seems more like a joke.
 
 Another approach I tried is the 'dump' function, set dump as error function, it will save
 whole running workspace as a file, which can be loaded later for debugging, just like coredump.
@@ -166,56 +169,58 @@ to complete, and create multi-GB file, which is not practical. So we have to rep
 our code in Rconsole, to identify the crash location.
 
 
-I've written lots of R debugging advantages, but it also has a funny behavior:
-R debugger do output filename, line number and function name, but the stack level is incorrect! 
+I've said lots of R debugging advantages, but it also has a funny behavior:
+R interactive debugger do output filename, line number and function name, but the stack level is incorrect! 
 I don't know how this is implemented(maybe due to that R debugger is also interrupted?),
 at least for other languages, if I want to go to target stack level shown by stack trace,
-I just enter the corresponding number of the function line I interested,
+I just enter the corresponding number of the function line I'm interested,
 then I got that stack. but for R, this never worked,
-the number you enter is always one level higher/or lower than shown line, I have to 
-guess it everytime, using variable list and source code to confirm I'm at the correct stack location!
-and R sometimes do lazy evaluate, so the call stack order may also be inverse, that makes 
-logic much harder to debug! for example in normal calling order, you call
+the number you enter is always one level higher/or lower than line shown, I have to 
+guess everytime ! (or using local variable list to match the source code, which is,
+time consuming) and R sometimes do lazy evaluate, so the call stack order may also be inverse, that makes 
+it much harder to debug. for example in normal calling order, you call
 
 ```R
 f(g(h()))
 ```
 
-h is called first, then g, then f at last.  I call this 'normal' because if view this callsite as a 
+h is called first, then g, then f at last.  I call this 'normal' because if view this callsite as
 data flow, the output of h flow into g, then output of g flow into f,
-so the root node h should run first, otherwise other node don't have necessary input.
+so root node h should run first, otherwise other nodes don't have necessary input.
 Any error happened in h should break whole flow immediately, because later node don't have necessary input.
-but in lazy evaluate, h call actually happened when the h output is accessed by g call,
-and g call actually happened when the g output is accessed by f, so the running order is that :
-f runs first, it access a variable of g output, leads g is called, and h is called last!
-so the backtrace will show backtrace of f and g first, but the bug actually happened in h! 
-combined with normal evaluated order functions, some debugging became hard to understand.
-such lazy evaluate implicates another potential problem, it will hide the buggy logic if that result is
-not accessed! code f seems worked for a long time, makes you think any of its input (g and h) also workes,
-but actually g or h never run.
+but in lazy evaluate, h call actually happened when the output of h is accessed by g call,
+and g call actually happened when the output of g is accessed by f, so the running order is:
+f -> g -> h, h run at last!so the backtrace show f and g first,but the bug actually happened in h! 
+combined with normal evaluated order, sometimes debugging became hard to understand.
+such lazy evaluate implicates another potential problem, it will hide buggy logic if the result is
+not accessed! code f seems worked for a long time, makes you think any of its input (g and h) also workes well,
+but actually g or h never run (and maybe even buggy)
 
 
 another problem of R is consistence, although its built-in type is array based,
-but function based on these concept don't give consist result. For example in other language
+but logic applied on them is not consist, For example in other language
 you may write 
 
 ```
-if(a > b) {
+if(a) {
     do_something()
 }
 ```
 
-in R the "if" expression accept only a single value, but R can't tell a or b is single-value or not(single value are just 1 element array),
-so it can't verify its correctness ahead of time, you must run to this line to know if it worked or not,
-and once correctness does not mean such line always correctness! 
-you may think it's not a big deal, just pass a and b as single element variable makes everything work,
-but it's not! R is array based, code may quickly changed to make a/b any length in some other places, 
-leave this if expression invalid. and by default R also don't force crash invalid usage, 
-if a and b are multi-value, R 'warning' you that only first element of array is used as condition, 
-if you're also printing some other logs, such warning quickly ignored in headless execution.
+in R although the "if" expression can accept normal variable (all of which is array) as condition,
+but only the first element of it will be used as condition
+(R can't tell the variable is single-value or not until runtime),
+you must run to this line to know if it worked or not.
+you may think it's not a big deal, just always use a single element as condition makes everything work,
+but R is array based, code may quickly changed to make a any length in some other places,
+leave this if expression invalid (piratically). 
+by default R 'warning' you if condition is not length 1, 
+but if you're also printing some other logs, such warning quickly ignored in headless execution.
+
 R also has options to treat these warnings as errors (crash immediately), 
 but even the base function in R has lots of such warnings (sqrt(-1) produce NAN also be a warning),
-such warnings can also came from any of used library. Treat warning as error
+simply 
+Treat warning as error
 can help you quickly find bad usage in interactive usage, but not suitable for a headless run.
 
 another example of inconsistency is how zero sized array is handled, you can define a zero sized array as
@@ -416,6 +421,7 @@ unchecked exception are used for programming logic error, for example dereferenc
 null pointer or access out of range array index,such exception should be fixed at
 source code level, instead of being handled during runtime, thus any of such
 catalog exception don't (and shouldn't ) requires explicit handle, 
+and by default terminate process (like assert in C)
 OTOH 'Checked Exception' to indicate the error only possible to be handled properly
 during runtime, for example most IO exception. Java also force 
 Checked exceptions must be declared as part of method signature, which means
@@ -432,11 +438,30 @@ thus it can't precisely verify code do-or-not follow the declaration.
 This leads exception handling in script language very weak, 
 almost any code is possible to throw any exception without any source hint, 
 developers have to read documents to know what to handle, 
-and most importantly, any mismatch led mis-behavior won't get any notice!
+and most importantly, such mismatch led mis-behavior won't be noticed at 
+source code level. 
 
-Here I may understand differences between languages deeper:
-their trade-off does not only apply to easy or hard to use, different api call,
-but also impacts how developers construct their logic, how they maintain codebase.
+It looked just the differences between dynamic/static-typed languages, 
+actually it also impact how developers construct their logic and maintain codebase.
+I found myself prefer to coding before design in script language, then 'patch' it later,
+but design before coding, or refactor frequency in static typed language.
+Such differences also reflected in their standard and third-party library API:
+dynamic-typed language API usually have more arguments, allow many options(
+and many of them can be ignored by most user). Accept multi input typed arguments,
+very alike it's written as a very simple form, but with more and more
+function added. Static language API accept exactly typed input, and usually with 
+fewer arguments, any interface mismatch will be caught at build time.
+While the codebase grown up, such differences became critical,
+even script language is much easier to bring up, but without careful design
+nor frequency interface cleanup, codebase quickly became unmaintainable.
+This does not mean script language can't construct clean, maintainable codebase, 
+but in practice, I find it really hard. 
+
+And I think this is the reason why someone said that script language 
+'suitable for prototype'
+
+
+
 
 
 
