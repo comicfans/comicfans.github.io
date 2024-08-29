@@ -68,16 +68,19 @@ different build config, not replaceable by each other.
 
     This dependencies problem also exist in software development, if you 
 create software which depends on system library, then your codebase may stop
-building/working on other machine (even with same distribution, only with
-some different packages!) or even on your machine because of some system package 
-update. To overcome this, you really need a isolated environment which has
-every dependencies in it (which is tricky) and has nothing to do with host,
+building/working on other machine (even same distribution, only with
+a few packages different!) or even on your machine after a package update.
+To overcome this, you really need a isolated environment which has
+every dependencies in it (and is tricky) and it has nothing to do with host,
 that's exactly what bazel (tries to) do.
 
     first of all the bazel main binary, is based on java, because jvm tries 
 to be a 'vm', it can be seen as one level of isolation. I know many people
 loves python, but the python interpreter and library itself, is really not
-as compatible as java.  you can always run old java code on new JVM.
+as compatible as java.  you can always run old java code on new JVM,  but for 
+python, the interpreter works at text language level, it's syntax broke several
+times ()
+
 secondly
 
 
