@@ -6,7 +6,7 @@ it gives me some interesting experience.
     the first feeling come to me is "complex language". the big scale of our codebase of course
 contribute lots on it, but even the small example of bazel is more complex to me. why should I 
 need to declare some 'toolchain' and download/unpack it before build ? my environment has everything!
-why not use my host toolchain ? then slowly I realized that it tries to avoid any depenencies of
+why not use my host compiler? then slowly I realized that it tries to avoid any depenencies of
 host, it also brings me memory the problem I tried to resolve myself: environment differences.
 
     traditional software build, almost everything is shared with host, for example compiler is
@@ -18,17 +18,17 @@ many library still built with autoconf
 it's always hard to build a complete isolated set of libraries and use everything
 from it (think about LFS!), and it became one of the reason we love distributions,
 they provide almost every tool/libraries we need, we just install them by package manager.
-such convenient deveopment experience is the main reason I prefer to use linux
+such convenient development experience is the main reason I prefer to use linux
 over windows. But distributions also suffer from it, that is, to keep everything works together.
 
 
     the complexcity of build system, actually have deep connection with
-the way how different software components works together on today's operation system,
+the way how different software components works together in operation system,
 without understanding the problem on this topic, we can't truly understand the 
 problem of build system. So this blog, serve as the first part of series blog, 
 will focus on how distribution works(instead of talking about build system).
 And why it changed, I mainly focus on linux distribution, and will
-talk about windows/osx a little.
+extend it to windows/osx a little.
 
 
 How software components works on today's linux system
@@ -44,114 +44,104 @@ across different distribution is almost the same, the gnome desktop you used fro
 won't be too different to the one that run on ubuntu, they both built from the gnome source code, only has
 some differences on how binaries is packed together.
 
-    But the idea to treat distributions as just a big set of pre-built binaries, 
-is over simplified idea, a biggest problem of distributions is to maintain a big set of "compatible"
-software components. Because on (traditional) distributions, everything is shared, which means 
-if you have two software A, and B, both depends on another components C, then
-there's only one copy of C, this behavior came nature on the early days of
-PC, during that time, there aren't so many software available on one machine,
-and disk is expensive, it make sense to work like this. it has tradeoff: you can't just use any version X
-of C, because  A and B may only works with some specified version of C.
-and for this reason, A can't be arbitrary version neither, if it has different 
-C version requirements, then A and B clash each other.
+    The idea to treat distributions as just a big set of pre-built binaries, 
+is over simplified idea, the biggest problem is keep this big set "compatible with each other",
+Because on (traditional) distributions, everything is shared, which means 
+if you have two software A, and B, both depends on another software C, then
+there's only one copy of C, this behavior came nature in the early days of
+PC, during that time, there aren't so many software available,
+and disk is expensive, it make sense to work like this. The tradeoff is:
+you can't just use any version X of C, because A and B may only works with 
+specified version of C. For this reason, we can only choose "some compatible set"
+of A/B/C, to make sure they work together.
 
-  This is not big problem in the early days, software is simple and they never
-upgrade frequency. But when the quantity increase, and all of them have
-more and more depenencies and upgrades, it became a really big problem.
-If you have used early version windows (windows 98/me for example), 
+  This is not big problem in the early days, for that software is simple and they don't
+upgrade frequency. But with the quantity increased, with more depenencies and upgrades,
+it became big problem. If you have used early version windows (98/me for example), 
 there're tons of errors about xxx.dll not found/conflict problem. Because
-many software install their bundle libraries into common place, when they
-overwritten each other, and one library can't guarantee to work exactly same
-way across different versions, it quickly became headache of using windows
-system.
+many software install their bundle dlls into common place and
+overwritten each other, as different versions of one dlls usually have different
+behavior (even very small),this easily silently break lots of software.
+it quickly became headache of using windows system.
 
-    On recent windows system, microsoft seems to change how libraries being
+    On recent windows system, microsoft changed how libraries being
 works on system: they tries to keep different versions co-exists, and the software
 will still see same set of libraries even another installed different version.
 This takes more disk usage but at least make them less possible to break.
-It's impossible to keep only one version of one library to satisfy everyone,
-Because most software running on windows is distributed by many non-centralized
-vendors in pre-built binary format, it's always possible they're depending 
-on different versions of a common library, when it's being decided at build 
-time , it won't change after distributed.
+It's impossible to keep only one version of one dll to satisfy everyone,
+Because most software running on windows is distributed by non-centralized
+vendors in pre-built binary format, different dlls requirements already being
+determined at build time, can't change after distributed.
 
-
-    Linux is different, almost every software provies source code, distribution
+    Linux is different, most software provies source code, distribution
 is the centralized place to build everything, so it's possible that to create
 a "every library only one version " approach. Consider the big quantity of 
 software components (hundreds of thousands with intra-depdencies,
 with possible changed depenencies requirements after upgrade),
-it's impossible for human brain to finger out a 'compatible set'
-of all components. That's why distributions's package manager always came
+it's impossible for human brain to finger out a 'compatible set', 
+That's why distributions's package manager always came
 with some sort of "depenencies resolver" , distribution developers
-only specify necessary (directly) depenencies between components, then package manager
-use resolve algorithm to figure out which version of package should be used together,
+only specify necessary (directly) depenencies between software, then package manager
+use resolve algorithm to figure out which version of package can be used together,
 or which set of packages should upgrade in one go, so after install/upgrade, 
 everything still being a compatible set. Because the install/upgrade will
 write system wisely, it always requires administration permission, just like 
 most windows software installation.
-
 
    If every package update increase their dependencies requirements step by step,
 it's possible that after many small updates, every package of system became 
 complete different to the initial one, and none of them can be turned back 
 to old version. If you tried ,suddenly package manager told you to almost reinstall 
 every package of whole system. And this should be one reason why distributions 
-have "big version", and only keep that very short time lifecycle. 
-then the "big version" increased , almost every package became new version,
-and package in old big version won't be upgrade any more. 
+have "big version", and only keep that very short time lifecycle,
+when the "big version" increased , almost every package became new version,
+and old big version won't have upgrade any more. A biggest problem of using 
+these distribution is that if you don't upgrade with "big version", then
+you can't use some up-to-date software, and if you upgrade with "big version",
+a lot of software may change the way they work. 
 
-
-   There do exist some 'rolling release' distribution, they usually requires you to update system
+   There do exist some 'rolling release' distribution, provides most up-to-date
+version of every software, they usually requires you to update system
 regularly, if not, then you'll be left into a staled state, and it's highly
-possible that a update after long time stale, will break the dependencies.
-I've hit such problem while using archlinux, because their new package depends
-on newer version of glibc, and I didn't update system during the glibc upgrade
-window, then every new package I installed won't work (I only update parts of 
-software). It's also possible that the package manager itself or some basic 
-command line got upgradad and stop working. Then you suddenly being left in a
-broken system, can't run package manager,even can't login, or can't boot at worst. 
-
-
-   since package install/upgrade may also involve some post configure steps,
-and these steps also depends on other components, it's also possible that a package
-which is compatible with other components, became non-compatible after some other 
-packages updates, even the contents itself(shared library for example) still 
-compatible with others. 
+possible that a update after long time stale, will break the system.
+I've hit such problem while using archlinux, because their new version software
+depends on newer version of glibc, and I didn't update system during the glibc upgrade
+window, then every new package I installed won't work, and if I upgrade
+glibc, then all old software stop working. It's also possible that the package 
+manager itself or some basic command line got upgradad and stop working. 
+Then you suddenly being left in a unrepairable state: you can't run package manager
+to install compatible version, even can't login, or can't boot at worst. 
 
     This complex dependencies problem lead people to find better way to run
-software, Appimage is the answer, they don't 
-try to create a complete compatible set of all software, instead, they create
-an minimal set compatible components environment, exactly for the target software, contains
-every dependencies the software using, it forms a "fat package", or can be treated 
-as a minimal "distribution". For example traditional distribution 
-openssl library is shared across whole system software, 
-but for Appimage or docker, every "fat packet" have its own copy of openssl. 
+software, Appimage is one of the answers, they packs every dependencies
+as a "big fat binary" and don't depends on any host software (or at least
+tried their best), so no matter which distribution/version user use, they
+can always running this "big fat binary".
+
+    For example traditional distribution openssl library is shared across whole system software, 
+but for Appimage, every "big fat binary" have its own copy of openssl. 
 And it's highly possible that they're not same version, with
 different build configuration , not inter-replaceable. 
 
     This idea is not new invention, this is exactly how Android/ios/osx Application
-works, people almost won't complain install/uninstall one Application will
-randomly break another one. Of course it takes more space, the storage today
-is much cheaper, and it gives developer great flexibility to develop different
+works, people almost never complain install/uninstall one Application will
+randomly break another one on these system. It do take more disk space, but the storage today
+is cheap enough, and it gives developer great flexibility to develop different
 Application without worrying about breaking unrelated things. 
 
-    Distribution also developing their 'Appimage' alike approach, for example
-flatpak from fedora and snapd from Ubuntu, but after reading their introduction,
-I feel the Appimage is the only right choice: you simply download a file,
-run it without special permission, just like the any windows that don't 
-requires install.  I can't understand why flatpak/snapd is designed as their
+   A interesting changes of traditional distribution is that they also developing 
+their 'Appimage' alike approach, for example flatpak from fedora and snapd from Ubuntu,
+but after reading their introduction, I feel the Appimage is the only right choice: you simply download a file,
+run it without special steps (except executable permission to it), just like the way a "portable" windows 
+application that don't requires install.  I can't understand why flatpak/snapd is designed as their
 ways, it looks stupid to me : they still requires some pre-setup, for example the flatpak/snap 
 command itself , to use software themselves.  And to install software with snap, 
 it even requires sudo, what the hell differences between it and 
-sudo apt-get install to the user? 
-
-   I think they may consider the centralized authentication for these software
-and make sure non-experienced user not hammed by malware, but as long as the package
-still requires some special tool to install, instead of simply download and 
-click, it's absolutely not the solution for software distribution.
-
-
+sudo apt-get install to the user? And for upstream project (who developed
+the source code), they still don't have a distribution agnostic way to pack/run
+their software, these package won't work on distribution
+that don't have flatpak/snapd, which completely make them valueless as 
+"universal" binary distribution approach.
 
    There're some distribution which choose a different approach to maintain packages, 
 nixos for example, will always use the exactly library version during build,
@@ -190,46 +180,83 @@ if application mess up the hardware state, then OS also can't recover.
 to have more permission than normal userspace process, if implements correctly,
 the hardware is completely controlled by operating system, userspace process
 won't control hardware directly, they're controlling "virtual resources", 
-which is the hardware abstraction from the OS, for example
-how much CPU/memory can be used.  Because application never take direct control
+which is the hardware abstraction from the OS. For example OS can decide
+how much CPU/Memory a application can use.  Because application never take direct control
 of hardware (or at least, under proper management of OS), OS can support
-running multi application at same time. The multi user support, became another
-level of abstraction, it's similar to multi-process support, but usually OS
+running multi application at same time, one process corruption, have very
+limited impact to other process. 
+
+   The multi user support, being another level of abstraction, OS
 define user as a predefined resource group, for example all process run
-under one user, can freely read/write files belongs to this user, and OS
+under one user, can freely read/write all files belongs to this user, and OS
 usually impose less restrictions between different process under same user,
-than the ones belongs to different user. During this time, there're isolations
-between different process, also between different users.
+so a user can have multi process cooperate together, at the same time if
+one user's setup is corrupted, it has very limited impact to other users.
 
-   And on today's mobile phone, such isolation became more restrict: it's
-between different applications. 
+   And on today's mobile phone (Android/IOS), such isolation became more restrict: 
+Every "App" being an isolated running environment, even it seems like all 
+Apps is "owned" by you, the single user. And the old cooperate ways that works 
+within multi-user-multi-process, almost don't work anymore, due to that they're
+too relax. For example on linux/windows system, if user running a malware,
+it can stole all file information belongs to this user, but on mobile system,
+one malware can only access very limited information of other part of system
+(unless user permit it). These changes, is very similar to the history of 
+how software being packed/distributed, they share less, became more individually.
+
+    From user's perspective, mobile phone is much easier to use than computer,
+every App simply works after install, it will never told you to "install App A version X"
+to make "App B version Y" work. 
+
+    There're also some interesting argument about "share less" between "share more"
+approach, first one came is a 2021 blogspot from [Gentoo](https://blogs.gentoo.org/mgorny/2021/02/19/the-modern-packagers-security-nightmare/),
+for people who aren't familiar with Gentoo, it's a source based distribution,
+every software is distributed as source code, and built on user's machine.
+User can adjust build options, which provides the most
+flexibility/customized behavior of dependencies. You can determine if software A
+depends on software B or not(by tradoff to not support B-related function).
+Author in this blog express the concern about static linking, bundled/vendored 
+dependencies, and Go/Rust/Python don't follow stable ABI/shared linking practise,
+which make distribution's work harder, and recently a 2024 blogspot from [Debian](https://jonathancarter.org/2024/08/29/orphaning-bcachefs-tools-in-debian/)
+also express concern on how bcachefs-tools is packed, it shares similar idea
+with Gentoo ones': (traditional) distribution maintainer prefer to share more,
+but new languages other than C, usually don't have stable ABI, and their packing/building
+model, prefer "share less" approach, and these two idea conflict each other,
+make them headache. There're also a reddit thread for first blogspot [here](https://www.reddit.com/r/rust/comments/ml77p3/the_modern_packagers_security_nightmare/).
+
+  Personally, I respect these traditional distributions maintainer's work,
+they helped me to quickly enjoy the linux environment, maintaining different
+versions on one system compatible with each other, but I got to say on this
+topic, these traditional distribution really don't get the real point: the users,
+care about if they can use the software, they don't care too much about how
+these software being packed/run. The top voted response from the reddit thread
+already modified to use a softer tone, maybe it's original content is more
+straghtforward/offensive(if I remembered correctly): why software bundle/vendored
+their dependencies instead of relaying on system shared libraries? 
+because you can't tell user/customer that the software is unable to run
+just due to their host lacks required dependencies!  As our blog mentioned, today's
+user-friendly operation system **do** prefer "share less" approach, it's the way that
+impact user least. Traditional distribution maintainer expects software can run
+correctly with different version(even only with updated fixed version) of dependencies
+is a good desire, but unfortunately not realistic. 
+A software can't have one specified version having infinite support life of time,
+when a software A depends on an old version of B, it's almost impossible for
+distribution maintainer to upgrade B and assume it still make A works.
+Even most open source C library tries their best to maintain ABI/API compatibility,
+it's still can't prove that new version won't break behavior.  
+Traditional distribution can't denied this fact because if libraries never break
+compatibility, they should never have big version upgrade, they can just upgrade
+individual packages to make everyone happy.
+
+    From upstream project perspective, they usually only have a finiate set
+of environment, say, the environment of main developers, and the best they
+can do, is to tell user that such environment
 
 
 
 
 
     
-
-
-  
-
-
-
-To be clear, install App on android/ios
-may involve a authentication , it behaves like "sudo", but usually that's 
-because most App on them requires purchase, this step make you may spend money
-on it, it make no sense that 
-
-    
     
 
 
-
-
-(honestly speaking after so many years linux
-experience, I still don't understand What The Hell libtoolize/automake/autoconf/m4 is,
-and refuse to learn any information about them, which I think is really a mess and a waste of time)
-
-
-Gentoo linux
 
