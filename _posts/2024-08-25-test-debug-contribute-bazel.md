@@ -207,56 +207,48 @@ how software being packed/distributed, they share less, became more individually
 every App simply works after install, it will never told you to "install App A version X"
 to make "App B version Y" work. 
 
-    There're also some interesting argument about "share less" between "share more"
-approach, first one came is a 2021 blogspot from [Gentoo](https://blogs.gentoo.org/mgorny/2021/02/19/the-modern-packagers-security-nightmare/),
+    There're also some interesting argument between "share less" and "share more"
+approach, first one is a 2021 blogspot from [Gentoo](https://blogs.gentoo.org/mgorny/2021/02/19/the-modern-packagers-security-nightmare/),
 for people who aren't familiar with Gentoo, it's a source based distribution,
 every software is distributed as source code, and built on user's machine.
 User can adjust build options, which provides the most
 flexibility/customized behavior of dependencies. You can determine if software A
-depends on software B or not(by tradoff to not support B-related function).
+depends on software B or not(by tradoff to support B-related function or not).
 Author in this blog express the concern about static linking, bundled/vendored 
 dependencies, and Go/Rust/Python don't follow stable ABI/shared linking practise,
 which make distribution's work harder, and recently a 2024 blogspot from [Debian](https://jonathancarter.org/2024/08/29/orphaning-bcachefs-tools-in-debian/)
 also express concern on how bcachefs-tools is packed, it shares similar idea
 with Gentoo ones': (traditional) distribution maintainer prefer to share more,
 but new languages other than C, usually don't have stable ABI, and their packing/building
-model, prefer "share less" approach, and these two idea conflict each other,
-make them headache. There're also a reddit thread for first blogspot [here](https://www.reddit.com/r/rust/comments/ml77p3/the_modern_packagers_security_nightmare/).
+model, prefer "share less" approach, this conflict make them headache. There're 
+also a reddit thread for first blogspot [here](https://www.reddit.com/r/rust/comments/ml77p3/the_modern_packagers_security_nightmare/).
 
   Personally, I respect these traditional distributions maintainer's work,
 they helped me to quickly enjoy the linux environment, maintaining different
 versions on one system compatible with each other, but I got to say on this
 topic, these traditional distribution really don't get the real point: the users,
-care about if they can use the software, they don't care too much about how
+care about if they can use the software, and don't care about how
 these software being packed/run. The top voted response from the reddit thread
-already modified to use a softer tone, maybe it's original content is more
-straghtforward/offensive(if I remembered correctly): why software bundle/vendored
+expressed this idea:(if I remembered correctly): why software developer bundle/vendored
 their dependencies instead of relaying on system shared libraries? 
 because you can't tell user/customer that the software is unable to run
 just due to their host lacks required dependencies!  As our blog mentioned, today's
 user-friendly operation system **do** prefer "share less" approach, it's the way that
 impact user least. Traditional distribution maintainer expects software can run
-correctly with different version(even only with updated fixed version) of dependencies
-is a good desire, but unfortunately not realistic. 
-A software can't have one specified version having infinite support life of time,
-when a software A depends on an old version of B, it's almost impossible for
-distribution maintainer to upgrade B and assume it still make A works.
-Even most open source C library tries their best to maintain ABI/API compatibility,
-it's still can't prove that new version won't break behavior.  
-Traditional distribution can't denied this fact because if libraries never break
-compatibility, they should never have big version upgrade, they can just upgrade
-individual packages to make everyone happy.
+correctly with different version of dependencies is a good desire, but unfortunately not realistic. 
 
-    From upstream project perspective, they usually only have a finiate set
-of environment, say, the environment of main developers, and the best they
-can do, is to tell user that such environment
-
-
-
-
-
-    
-    
+  And these new languages (python/rust/go) provide their own package/dependencies manager
+(and they usually pin all dependencies version to some specified version)
+and do static linking(or alike behavior), Because that's currently the best
+known way to keep final running binary behaves same as when its maintainers developed
+them. If users run with different dependencies, developers can't
+tell if a bug belongs to software itself, or just a behavior change of its
+dependencies. The term "bug" is really hard to define in this scenario, 
+sometimes developers tries to fix unreasonable/buggy behavior, but some others
+are already depends on this behavior. Can distribution maintainers just changes
+these dependencies as their will? Yes they can, but it also becomes their
+response to support user's question about why software don't behave same to upstream
+project's. Because 
 
 
 
