@@ -172,9 +172,9 @@ Finally I found in another [random forum thread](https://forums.unrealengine.com
 ```
  I found a fix - this error is coming from this file: Engine/Build/Commit.gitdeps.xml
 Just be sure to download the xml file for your release tag.
-
-![image]({{ site.baseurl }}/images/2024-12-30-wtf-unreal.markdown/424_release_notes.png)
 ```
+![image]({{ site.baseurl }}/images/2024-12-30-wtf-unreal.markdown/424_release_notes.png)
+
 cross check with the AUR script, I slowly realized that the Commit.gitdeps.xml I use is still incorrect,
 I must download the one in release page... I just want to say 
 
