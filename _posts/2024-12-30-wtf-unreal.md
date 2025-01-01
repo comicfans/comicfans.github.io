@@ -33,7 +33,7 @@ Failed to download 'http://cdn.unrealengine.com/dependencies/UnrealEngine-165468
 ```
 
 then google find a [Unreal forum thread](https://forums.unrealengine.com/t/linux-couldnt-compile-unreal-4-27-2/820507) :
-![image](pange.png)
+![image]({{ site.baseurl }}/images/2024-12-30-wtf-unreal.markdown/Commit_gitdeps_xml.png)
 
 Even the error message is different to mine, I think it should also resolve my problem, 
 it said that I need the Commit.gitdeps.xml from the Unreal repository, which I simply think it's the up-to-date one in unreal git repo,
@@ -172,6 +172,8 @@ Finally I found in another [random forum thread](https://forums.unrealengine.com
 ```
  I found a fix - this error is coming from this file: Engine/Build/Commit.gitdeps.xml
 Just be sure to download the xml file for your release tag.
+
+![image]({{ site.baseurl }}/images/2024-12-30-wtf-unreal.markdown/424_release_notes.png)
 ```
 cross check with the AUR script, I slowly realized that the Commit.gitdeps.xml I use is still incorrect,
 I must download the one in release page... I just want to say 
