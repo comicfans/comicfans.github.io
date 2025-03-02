@@ -78,15 +78,21 @@ because all headers of libraries lives in shared folder, which is used as defaul
 include dir, then such header can be found(just because other dependencies also use default include dir)
 then you won't realize such problem until somebody 
 build in a environment with B installed to different location and failed.
+Someone may treat this "success by accident" is better, but that actually have 
+more impact than thinking. For example depends on dependencies order, 
+some of the code may include headers from system shared location,
+but other parts of code using a custom built library header, leads incompatible
+ABI which is only detectable at run time and very confusing to fix.
 
-   To accomplish this goal, bazel will soft link any input (include dependencies and the source file to compile themselves)
+
+   To fix such problems, bazel will soft link any input (include dependencies and the source file to compile themselves)
 of the target into a per-target directory, then utilize linux namespace as 
 sandbox for the build process under this dir, so it can precisely control what file
-can be read by the build steps(still not perfect although). And if the target's output
-being used by another, bazel also won't expose any file except ones explicitly declared,
+can be read/write by the build steps(still not perfect although). And if the target's output
+are being used by another, bazel also won't expose any file except ones that explicitly declared,
 which means any file that not being declared explicitly as input/output, can't be seen
 during build. it looks wired to most cmake users, Although cmake encourage out-of-tree build,
-but none-generated source files and generated intermediate artifact are still read in-place, 
+but none-generated source files and generated intermediate artifact are still shared during build and being read in-place, 
 so it's easier to rerun build step command to easily spot/debug build problems. 
 The reason for this is also try to force the correct,explicit dependencies,
 instead of silent success but problematic build. Consider following example:
@@ -181,4 +187,8 @@ of structure. For simple project script, without too much logic ,I feel cmake sc
 much easier to write/understand, but for complex project with lots of custom
 logic, untyped cmake script is more error-prone than bazel.
 
-
+    
+  Bazel's sandbox is a very important component, it's also applied to testcase
+(by default), so it has the same advantages similar to build step isolation,
+which means the bazel test
+  which means it also inherent the limitation of linux namespace.
