@@ -189,6 +189,109 @@ logic, untyped cmake script is more error-prone than bazel.
 
     
   Bazel's sandbox is a very important component, it's also applied to testcase
-(by default), so it has the same advantages similar to build step isolation,
-which means the bazel test
-  which means it also inherent the limitation of linux namespace.
+by default, so testcase can enjoy same isolation advantages to build step ,
+and during testing, I hit a very interesting bug: my testcase try to utilize IPPROTO_ICMP 
+to send ping packet, it runs without problem in host environment, but always 
+failed to create the socket fd inside bazel sandbox environment. Since 
+bazel is a open-source project, I decide to deep dive into this problem.
+
+
+  First I tried to understand what permission is required for my code to run,
+you can reference [linux man page](https://man7.org/linux/man-pages/man7/icmp.7.html)
+and check [LWN](https://lwn.net/Articles/422330/) to see how it works. So the basic idea is that
+normal user should be allowed to create such socket type without root permission,
+if its GID inside /proc/sys/net/ipv4/ping_group_range knob start/end range
+on my host, it shows 
+```
+0 65535
+```
+which basically means any user group on my host can use IPPROTO_ICMP without special permission.
+but such knob inside bazel sandbox is always a wired value
+```
+65534 65534
+```
+and that range definitely not including my GID inside bazel's sandbox,
+so I tried to write ```0 65535``` range to mimic host behavior inside sandbox,
+only got a permission denied error, even I'm running my testcase as 'fakeroot'.
+According to linux man page, such range should be initialized to ```1 0```,  
+I can't understand why it shows magic ```65534 65534```
+
+
+First idea came to me is to check docker's behavior, because it also use namespace,
+Unfortunately I can't see any problem to run my test inside docker. So I ask this question
+in [runc discussions](https://github.com/opencontainers/runc/discussions/4366), and 
+cyphar kindly answered my questions, then I realize docker and bazel sandbox are using
+different mode of namespace, docker is running privileged mode as root, which can map range of 
+UID/GID into namespace, make the environment pretty much like normal Host environment,
+bazel is running as unprivileged mode, which can only map 1 UID/GID into namespace.
+That's why we have 'fakeroot' tag in bazel, it will map our UID to 0 inside namespace.
+But that still didn't explain why I have magic ```65534 65534``` value inside sandbox,
+and why I can't change it even I'm running as 'fakeroot'. Then when I google this 65534 magic number,
+I got [stackoverflow](https://stackoverflow.com/questions/34831861/can-i-assume-that-nobody-is-65534)
+
+```
+Historically, the user “nobody” was assigned UID -2 by several operating systems, although other values such as 2^(15)−1 = 32,767 are also in use, such as by OpenBSD. For compatibility between 16-bit and 32-bit UIDs, many Linux distributions now set it to be 2^(16)−2 = 65,534; the Linux kernel defaults to returning this value when a 32-bit UID does not fit into the return value of the 16-bit system calls. An alternative convention assigns the last UID of the range statically allocated for system use (0-99) to nobody: 99.
+```
+and
+
+```
+Maybe you can use the value of 
+/proc/sys/fs/overflowuid.
+```
+
+ 
+
+
+
+That gives me some inspiration,which means kernel are treating our ping_group_range as invalid value,
+I also got [this](https://discuss.linuxcontainers.org/t/setting-net-ipv4-ping-group-range-inside-an-lxd-container/2162/4)
+```
+So what this means is that if either the minimum or maximum GID value in the specified range is not valid inside of the user namespace, the kernel will (silently) set the sysctl’s value to the range of “1 0” from the init user namespace (IMO, it should be returning an error in this situation).
+
+After the write has silently failed and you read back the sysctl value, the kernel does something silly by reporting that the min and max values of the GID range are the overflow gid (DEFAULT_OVERFLOWGID in the source code) since the actual sysctl value doesn’t map to a valid GID range inside the container. This is why you see 65534 65534 when reading the sysctl from inside the 18.04 container.
+```
+this thread also kind enough to provide corresponding kernel source code:
+From net/ipv4/sysctl_net_ipv4.c
+```C
+static int ipv4_ping_group_range(struct ctl_table *table, int write,
+                                 void __user *buffer,
+                                 size_t *lenp, loff_t *ppos)
+{
+...
+        if (write && ret == 0) {
+                low = make_kgid(user_ns, urange[0]);
+                high = make_kgid(user_ns, urange[1]);
+                if (!gid_valid(low) || !gid_valid(high) ||
+                    (urange[1] < urange[0]) || gid_lt(high, low)) {
+                        low = make_kgid(&init_user_ns, 1);
+                        high = make_kgid(&init_user_ns, 0);
+                }
+                set_ping_group_range(table, low, high);
+        }
+
+        return ret;
+}
+```
+
+
+So what left is just to confirm what happened in kernel when I set ranges to this knob...
+Debugging kernel over serial gdb seems very unstable to me, but I still manage to step
+most important parts of the code, when I try to write ```0 65535``` to this knob as fakeroot,
+it shows that low is valid gid if I run as fakeroot, but not high. Consider the unprivileged
+sandbox one UID/GID map restriction, then the whole picture is clear:
+
+1. when bazel create networkspace, the config knob reset to init value 1 0, which forbidden any user to use IPPROTO_ICMP
+2. bazel use unprivileged namespace, it will have exactly one UID/GID inside the namespace
+3. because GID = 1 can't map to valid GID inside namespace, so we got a magic ```65534 65534``` knob value
+
+Then after that, it's also straightforward to fix it
+
+1. this knob is only writable by root, so we must be fakeroot
+2. the only valid GID inside namespace is the GID of root, so the range must be write as 0 0
+
+A quick test shows that this fix do let me using IPPROTO_ICMP inside fakeroot sandbox, Nice!
+And during that I also found [podman](https://github.com/containers/common/blob/ae4a61e1b2e0af84a668f87f7622d86ebc418cba/pkg/config/containers.conf#L80) have similar process during namespace initialization. 
+
+Now my fix already being part of bazel 7.4 release, enjoy it!
+
+
