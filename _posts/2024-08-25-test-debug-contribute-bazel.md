@@ -1,16 +1,17 @@
+# Test/Debug/Contribute to Bazel
 
-    I have lots of experience on CMake build(see my previous post migrate more than 500 visual studio projects to cmake),
+I have lots of experience on CMake build(see my previous post migrate more than 500 visual studio projects to cmake),
 I'm always satisfied how straightforward to use it to build from source.
 Recently due to work requirements, I'm learning/using bazel to build C/C++, which a build tool from google, 
 it gives me some interesting experience.
 
-    the first feeling come to me is "complex". the big scale of our codebase of course
+the first feeling come to me is "complex". the big scale of our codebase of course
 contribute lots on it, but even the small example of bazel seems more complex than cmake to me. Why should I 
 need to declare some 'toolchain' and download/unpack it before build ? My OS already has everything I need!
 Why not use my host compiler? Then slowly I realized that it tries to avoid any dependencies of
 host, which is a big problem for C/C++ development/deploy: environment differences.
 
-    traditional software build in linux, almost everything is shared with host, for example compiler is
+traditional software build in linux, almost everything is shared with host, for example compiler is
 system gcc, libraries are installed by package manager (apt/dnf for example). It's possible
 to use custom toolchains/libraries, just not as straightforward as using system ones.
 For example you need to adjust PATH, specified CC,set PKG_CONFIG_PATH or change --prefix.
@@ -20,7 +21,7 @@ they provide almost every tool/libraries we need, we just install them by packag
 Such convenient development experience is the major reason I prefer to develop in Linux
 instead of windows. But distributions also suffer from it, that is, to keep everything works together.
 
-   Because on (traditional) distributions, everything is shared, which means 
+Because on (traditional) distributions, everything is shared, which means 
 if you have two software A, and B, both depends on C, then
 there's only one copy of C, it make sense in the early days of
 PC, there aren't so many software available, and disk is expensive. The tradeoff is:
@@ -31,7 +32,7 @@ has some app called "package manager"(dnf/apt for example) to figure how to inst
 packages. They tells user which app can be upgrade, or reject if 
 the specified version can't work with the rest of system.
 
-    The way distributions handle packages actually deeply affact how
+The way distributions handle packages actually deeply affact how
 we develop/deploy software. Since most software running on Linux is built from source
 by distributions, different distributions may choose different build config/flag, leads 
 final binary not compatible with each other (even with exactly same version), 
@@ -44,7 +45,7 @@ and install it globally to provides this information to package manager).
 Although most distribution tries their best to avoid this, but it's still possible.
 Which is the Linux version of windows dll nightmare. 
 
-   Another limitation of such workflow is that the system
+Another limitation of such workflow is that the system
 may even can't provide the complete set of required libraries we need,
 as I said, system need to maintain (almost) every components on system
 compatible with each other, the version requirements is much stricter
@@ -53,13 +54,13 @@ In such situation, the binary we produce will have mixed dependencies on
 both system and custom built ones (even built by different toolchains),
 which increase the possibility to suffer from incompatible problem.
 
-   When we're building C/C++ with autoconf/CMake or other similar build tool, 
+When we're building C/C++ with autoconf/CMake or other similar build tool, 
 we (almost) bind to this dependency model by default. We can try to build
 every dependencies manually, then we goes back to LFS alike scenario,
 autoconf/cmake also not designed to work for such usage by default, they require lots
 of tunes to work correctly.
 
-    And this is exactly what bazel trying to resolve (at least one prospective), a bazel C/C++ project
+And this is exactly what bazel trying to resolve (at least one prospective), a bazel C/C++ project
 must contain toolchain config, which means even the most basic dependencies,
 like syscall/libc/stdc++, is deterministic at build time(a complete toolchain usually bind them as a whole),
 and every libraries used, should came from bazel central register (BCR for short, which provides pre-defined build script),
@@ -69,7 +70,7 @@ agnostic to host system. Bazel also provides version based dependency resolve fu
 when you're using a dependency from BCR, then it'll auto pull in required indirect dependencies,
 also make sure they're compatible.
 
-    bazel also try to make the build dependencies more explicitily, that is
+bazel also try to make the build dependencies more explicitily, that is
 if user didn't declare correct dependencies, bazel tries to fail the build, 
 instead of success build (by accident). For example if a library A depends on
 a third party library B, but you forgot to declare B as dependencies of A,
@@ -85,7 +86,7 @@ but other parts of code using a custom built library header, leads incompatible
 ABI which is only detectable at run time and very confusing to fix.
 
 
-   To fix such problems, bazel will soft link any input (include dependencies and the source file to compile themselves)
+To fix such problems, bazel will soft link any input (include dependencies and the source file to compile themselves)
 of the target into a per-target directory, then utilize linux namespace as 
 sandbox for the build process under this dir, so it can precisely control what file
 can be read/write by the build steps(still not perfect although). And if the target's output
@@ -171,7 +172,7 @@ We also notice that the $(SRCS) $(OUTS) usage, Because the isolated environment
 controlled by bazel, we can only use input/output var which defined by bazel,
 thus prevent any mismatch filename usage.
 
-  Bazel also supports programming by its script language,
+Bazel also supports programming by its script language,
 called skylark, a subset of python language, it's more feature complete
 (but also more complex) language. As comparison, CMake script is much like
 a bash script, everything is string and you need to interpret/escape/combine
@@ -188,7 +189,7 @@ much easier to write/understand, but for complex project with lots of custom
 logic, untyped cmake script is more error-prone than bazel.
 
     
-  Bazel's sandbox is a very important component, it's also applied to testcase
+Bazel's sandbox is a very important component, it's also applied to testcase
 by default, so testcase can enjoy same isolation advantages to build step ,
 and during testing, I hit a very interesting bug: my testcase try to utilize IPPROTO_ICMP 
 to send ping packet, it runs without problem in host environment, but always 
@@ -196,7 +197,7 @@ failed to create the socket fd inside bazel sandbox environment. Since
 bazel is a open-source project, I decide to deep dive into this problem.
 
 
-  First I tried to understand what permission is required for my code to run,
+First I tried to understand what permission is required for my code to run,
 you can reference [linux man page](https://man7.org/linux/man-pages/man7/icmp.7.html)
 and check [LWN](https://lwn.net/Articles/422330/) to see how it works. So the basic idea is that
 normal user should be allowed to create such socket type without root permission,
