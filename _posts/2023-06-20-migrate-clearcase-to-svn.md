@@ -1,7 +1,5 @@
-During my job at some company, I got a very project, boss decide to stop using their more than 20 years 
-version control system, IBM clearcase to cost down (will stop clearcase service at deadline!),
-and they want to preserve their development history as much as possible.
-since I have experience of using cvs/svn/git, I'm glade to take this challenge. Finally I successfully
+During my job at some company, I got a surprise project, our boss decide to stop using IBM clearcase for cost down reason, but they want to preserve their more than 20 years development history as much as possible.
+since I have lots of experience of cvs/svn/git, I'm glade to take this challenge. Finally I successfully
 convert this super-big clearcase history to svn repo, with all file development history preserved. 
 It's very interesting experience, I hope to share them here (It's already more than 5 years job before,
 I think this won't hurt anybody)
@@ -15,14 +13,14 @@ what VCS is , you can just skip this section
 During software development (even the simplest ones), developers may face
 'What did I changed? Why it became incorrect now?' problem (of course not you),
 at that time they may want 'time machine' to take them back to 2 days ago.
-and VCS is such this time machine. you can see it as a infinite undo-redo
+and VCS is such a time machine. You can see it as a infinite undo-redo
 history, it manage a folder which contains all dir/files needed to be remembered,
 (which called a repository). And remember everything changed during your development even after
 editor closing. Of course it isn't so intelligent, you have to use its client
-tool at some time (usually when you finish some meaningful work) to tell it
+tool (usually when you finish some meaningful work) to tell it
 'please remember state right now'. And VCS will record a 'version'.
 (this procedure usually called 'commit') when you want to go back to early state,
-just tell VCS a version to view, and you will have a history snapshot. 
+just tell VCS a version to view, and you got a history snapshot. 
 
 VCS also allow none-linear history, means history timeline may divided at some time point,
 and individual timeline evolute independently, history form a 'tree',
@@ -61,9 +59,9 @@ submit version, even when second user don't see first one's work before he submi
 for the good part, when users modify different files, they never need to
 manual operate (because no file conflict will happen), they just throw their work
 to svn just like their changeset happen one after another. 
-but for the bad part, earlier submit changeset will be 'magically inserted'
-before later submit changeset, just like the later one is based on earlier ones
-but this is actually not the case! say later commit change file A , which depends
+for the bad part, earlier submit changeset will be 'magically inserted'
+before later submit changeset, just like the later one is based on earlier ones,
+but this is actually not what we want! say later commit change file A , which depends
 on file B, but another user which changed file B to a incompatible state and
 submit earlier, the later commit user won't know file B already changed 
 until he submit (because such changeset submit may just 1 second before later one)
@@ -77,7 +75,7 @@ now most popular VCS is git, it does not only record version for whole repositor
 but also strictly treat the whole state of all files as the version contents,
 which means if user commit file A which requires exactly old state of other files,
 then such version will be a snapshot of changed file A and all non-changed other files,
-exactly same as user commit. This behavior greatly improved development experience,
+exactly same as when user made the commit. This behavior greatly improved development experience,
 because every commit is the exactly snapshot of whole repository, no 'magic insert'
 will happen and break your work silently. When user need to share their work
 they must do a manually 'merge' (even they're modifying completely different set of files). 
@@ -140,13 +138,13 @@ mostly, for the reasons:
 3. clearcase don't force overall file in one branch/tag, every file evolute independently,
    although svn have global version, but branches is just dir under branches dir,  
    different dir can have their own history (as long as you don't treat their root as overall dir)
-   so clearcase per-branch history can be placed under some old_migrate dir, so these old clearcase branches (
+   so clearcase per-branch history can be placed under some old_migrate dir, these old clearcase branches (
    which only contains history of part of files) won't confuse user
 
 I've also considered git conversion, but for two reasons I don't take this approach
 
 1. git don't have permission control, any user can access repository can view all contents,
-   but svn allow user authorization and permission control. our company needs permission control
+   while svn allow user authorization and permission control. Our company needs permission control
 
 2. clearcase branch can be mapped to git branches too,
    (as long as you always start empty branch and only contain files within this branch)
@@ -163,12 +161,13 @@ don't including all history of the VOB(files not selected or files already delet
 the correct command to dump all history of VOB is 
 
 ```
+sorry I already forgot this, you can read clearcase command line for that
 
 ```
 
 
-it will describe every changes of the VOB, including branch tree, file path, commit message
-and much bigger than cc2svn will download.
+it will describe every changes of the VOB, including branch tree, file path, commit message,
+this is much bigger than cc2svn will download.
 with this full description, I can download every single version of all files 
 cc2svn script said that to start the tool 2 days before to pre-download the history, 
 but seems my company's history is much-much bigger, it has 7 VOBS and total revision more than 4000000!
@@ -185,12 +184,12 @@ thus I decide to improve the download script,
 1. it need to resume after break or failed command
 2. download process must be distributable across different machines, to lower down per-machines's traffic,  and accelerate total speed
 
-finally I use a shared folder share download files, every file using clearcase history path
-as its dir so path won't clash, and while downloading, use simple mark file
+finally I use a shared folder for download files, every file using clearcase history path
+as its folder so it won't clash, while downloading, use simple mark file
 to record if such file is being processed, or completed, to help resume downloading from interrupted command
-and avoid two machines operate one file. with more than a week downloading
+and avoid two machines operate one file. with 3 PCs and more than a week downloading
 (and pingpong with our security team, because I have unusual traffic)
-I finally downloaded all the history, and now It's time for the actual convert
+I finally downloaded all the history, now It's time for the actual convert
 
 svn convert is also very straightforward, you write series of svn import commands
 every command record the operate file path, the action, feed this commands
@@ -205,7 +204,7 @@ for analysis, so I decide to convert these records into database,
 this is required because converting 4000000 commits repo will spend hours and days,
 incorrect convert logic just waste too much time. records in database not only
 allow me to skip slow parse process, but also filter parts of file/time to create a simplified repo,
-and verify its correctness. since this is just a correctness verify process,
+and verify its correctness. Since first step is just correctness verify process,
 I even don't need to put actual
 file contents in it, just dump the file version information and the real path of 
 my pre-download cache path can help me to verify the contents. 
@@ -223,12 +222,12 @@ overlap each other, and won't miss lines.
 be aware of python GIL, you should use multiprocess instead of thread.
 
 
-currently the converted svn repo is just a small part of files/history,
+After that the converted svn repo is just a small part of files/history,
 every file is dummy text, but enough for me to verify history structure.
 with some enhancement to cc2svn script, I can also including the delete/moved file history,
 in converted repo, now I can use svn client to view every file history graph,
 to verify it's same as graph of clearcase client shown. maybe this can be checked strictly 
-by topically sort their history, but I don't have enough time to try , just verify some of them.
+by topically sort their history, but I don't have enough time to try (the clearcase shutdown has deadline!), only manually verify some of them.
 
 
 improvement of clearcase history
@@ -256,16 +255,16 @@ be different to final repository, this is just to verify all the generated
 svn history is correct and can be constructed correct svn history.
 
 it turns out to be a very good idea, I found that even after reducing history down to 600000 revisions,
-and file contents still dummy contents, such dump construct still spend too much time,
-since windows filesystem is not friendly to many small files, plus my company has antivirus protection
-to future lower down, or even interrupted the import process! 
-I have to try linux in virtual machine, but still too slow, I already tried ext4 on a passthrough ssd!
+and file contents still being dummy contents, this dump construct still spend too much time,
+because windows filesystem is not friendly to many small files, and my company has antivirus protection
+to further slow it down, or even interrupted the import process! 
+I have to try linux in virtual machine, still not fast enough, I already tried ext4 on a passthrough ssd!
 which filesystem and disk can be faster? tmpfs on ram! 
 tmpfs using memory as baking store , and will auto swap to disk when capacity exceeds.
 so I put the repo in tmpfs, thanks to the 64GB memory, the convert process speedup a lot! 
 but I quickly hit another limitation, file number exceeds tmpfs limit, maybe nr_inodes can 
 fix it , but I tried another method, just run svnadmin pack endlessly, it will compact 
-the repository every 1000 revisions reduce file number, 
+the repository every 1000 revisions to reduce file number, 
 and importantly it can operate simutinously when the importing running, 
 so I don't need to care about inode exceeds. This approach has only one drawback:
 I must save the converted repository before any shutdown/crash…
@@ -312,8 +311,8 @@ also configure JIRA to use LDAP authorization, it only requires a admin username
 then I can config which users should be filtered as JIRA accounts),
 so I wrote a very simple SASL plugin simpleldap, just filling username
 part as ldap bind path (someone suggested this is a security hole, but this
-is just enough for my usage), it's here. But unfortunately this code didn't 
+is just enough for my usage), it's [here](https://github.com/cyrusimap/cyrus-sasl/pull/468). But unfortunately this code didn't 
 get upstream before I left that company. Since I don't have the environment for
-testing anymore, I also lose intention to improve it.
+testing anymore, I also lose intention to upstream it.
 
 
