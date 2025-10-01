@@ -294,10 +294,10 @@ pass index.return  = TRUE, the result turned into a list which contains the sort
 I realized that what I'm complainting is not a problem for interactive usage,
 when viewed every step output, such 'bugs' can be easily spoted (actually 
 these are 'feathures' to improve interactive experience). it has so many 'easy to use'
-feature but in headless execution this just makes everything more complicit.
+feature but in headless execution this just makes everything more complicated.
 In headless execution you don't have oppotunity to view every step output(such code may run 
 millions times with many different input parameter), so you must 'predict' program behavior,
-and for predictable, consist behavior (even it's more complicit) is much more important than 
+and for predictable, consist behavior (even it's more complicated) is much more important than 
 easier(but inconsist) usage. Since script language is (almostly) dynamic-typed,
 there's no restriction on variable's type, thus make such consist behavior
 prediction much, much harder than static typed language. This makes dynamic-typed
@@ -306,11 +306,11 @@ language not suitable for big scale codebase and none-interactive usage.
 Another minor(maybe major) problem is that IDE can't provide very helpful completion suggestion
 for dynamic-typed language, since even the language itself don't know the actual
 type of variable until runtime, of course IDE don't know what they should suggest!
-oh the other hand static-typed language have all variable type defined at compile time,
+OTOH static-typed language have all variable type defined at compile time,
 IDE can easily understand what action your code is allowed to do, thus give
-very percisie suggestion. If the suggestion engine and language have tight integration,
+very precise suggestion. If the suggestion engine and language have tight integration,
 It can even provide almost correct suggestion.correct here doesn't mean correct logic,
-it means the suggested code are always able to pass the compiler-check, but that's also
+it means the suggested code are always able to build, but that's also
 a big improvement for developing.
 
 This is not simply a complaint on R language, I've also used other script languages before,
@@ -318,12 +318,12 @@ but never maintain such scale codebase for so much headless usage.
 In theory, if you express exactly same logic in different language (as long as they're turing complete),
 it should make no differences between their behavior, and dynaimic type language omit type declaration,
 easier to write, without need to compile ahead of time, why not write whole software in it?  
-Unfortunately in practical this is completely different. software always evuluate, with more and more function added,
-most of time you're evluting/maintain it, instead of writing all the function to its final state at once.
-for this reason, you're keeping 'changing' software behavior, and these requires some verify process,
+Unfortunately in practical this is completely different. Software always evolutes, with more and more function added,
+most of time you're maintaining it, instead of writing all the function to its final state at once.
+For this reason, you're keeping 'changing' software behavior, and these requires some verify process,
 to assume such modification not break existing logic, and different developers need to understand each other's work.
-documentation, code review, testing can help this, but the language feathure itself, is also important.
-so why are we using programming language, and more specified, why are we using computer?
+Documentation, code review, testing can help this, The language feature itself, is also important.
+So why we're using programming language, and more specified, why are we using computer?
 
 I think the answser is that human are lazy, we want the computer to handle as much as possible for us.
 dynamic/static-typed language choose different approaches:
@@ -337,7 +337,7 @@ but such read is meaningless on a function. even we don't write the exactly type
 we still have to assume type of variable is expected. without knowing the type, we can't do anything meaningful.
 (you may call some common functions like hash_code/ to_string, but that doesn't help)
 
-so the hard part of dynaimc-typed language became: 
+so the hard part of dynamic-typed language became: 
 can you remember every type your code expect it to be? can you keep all these types correct all the time? without type declaration? 
 My experience is that even I've read whole source code multi times, I still need runtime verification to know
 the exactly type of variable. And when you need to share works with others, this workflow quickly exploded.
@@ -359,9 +359,9 @@ many python code have variable type declaration (even it's still dynamic typed).
 static typed language force you to declare type upfront and won't change it during runtime,
 it also requires lots of code modifications when you change logic or type,
 this seems more time-consuming, but actually it moved the runtime break into 
-compile time error, because incompaitble type/usage is forbidden in static-type language (
-even during execution such logic won't being called) for dynamic-typed language,
-such incompaitble problem only triggered at runtime, or even worse,
+compile time error, because incompatible type/usage is forbidden in static-type language (
+even such logic won't being called during runtime) for dynamic-typed language,
+such problem only triggered at runtime, or even worse,
 incompatible function not being called at runtime without anybody notice,
 or given silent incorrect result without crashing.
 
@@ -412,7 +412,7 @@ until matched handler found. it allows error handling code
 decoupled from where error happened, makes normal codepath clean,
 but also requires handling logic match the actual exception spec.
 if logic handle FileNotFound exception, but the code actually throws
-FileCantOpen exception, although two errors are very similar, such handle
+FileCantOpen exception, although two errors are very similar, this handle
 logic won't work. Such logic/exception match requires language support,
 and for my personal experience, I think java exception handling is great.
 
@@ -452,7 +452,7 @@ very alike it's written as a very simple form, but with more and more
 function added. Static language API accept exactly typed input, and usually with 
 fewer arguments, any interface mismatch will be caught at build time.
 While the codebase grown up, such differences became critical,
-even script language is much easier to bring up, but without careful design
+although script language is much easier to bring up, but without careful design
 nor frequency interface cleanup, codebase quickly became unmaintainable.
 This does not mean script language can't construct clean, maintainable codebase, 
 but in practice, I find it really hard. 
