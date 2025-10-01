@@ -8,7 +8,7 @@ The challenge is how to make this UI painting portable while still performant.
 To achieve reasonable FPS on current low-profile ARM device,
 previous implementation use device specified API to drive the display controller directly, 
 you can blit pixels directly into display controller baking buffer,
-which will be flushed on screen without passing through normal OS.
+which will be flushed on screen without passing through normal OS screen buffer.
 It also supports 'color key', when you paint GUI interface over
 that special buffer layer, display controller will make any 
 pixels with the color key to transparent, 
@@ -22,7 +22,7 @@ thus making image processing and toolkit painting in same context.
 
 
 To ease that migration, we also consider using gstreamer pipeline, 
-It's designed for video pipeline, portable/performant/easy-to-use,
+It's designed for video playback, portable/performant/easy-to-use,
 supports OpenGL display, also have a Qt shared context example, seems quite a good fit.
 But actually it has many hidden problems in practise,
 If we reconsider the decision from the present point of view, gstreamer is still involving quickly during that time (
@@ -65,7 +65,7 @@ which lead by OpenGL context sharing dirty tricks,
 different vendor/driver/OS behavior, but finally I fix all of them, 
 our Application has stable context sharing under Linux/Windows AMD/Nvidia, only with one exception: 
 While running on windows XP, it randomly stop streaming images, with one gstreamer 
-thread deadloop. With days and days repeating debugging, I realized that
+thread deadloop. after days and days repeating debugging, I realized that
 it must have a low-level threading logic bug, from gthread (a library that Gstreamer used as portable pthread implementation) itself.
 otherwise g_cond_broadcast (pthread_broadcast equivalent) shouldn't dead looping.
 I never think about this possibility since it's being used as the thread implementation
@@ -77,7 +77,7 @@ Now let's dig into the rabbit hole.
 
 The Gstreamer threading model at high level looks like this: (IIRC)
 
-  1. OpenGL has implicit thread local context bind
+  1. OpenGL has implicit thread local context bind,
      A GL control thread is used to call all OpenGL functions, that thread own the OpenGL context,
      its only responsible is to run callbacks from sending thread.
 
@@ -104,50 +104,219 @@ I slowly got the idea on how gthread emulate pthread under windows.
 gthread mimic pthread with minor naming change, It compile to exactly same pthread stubs under linux,
 Their Windows implementation is based on Vista API, for windows XP, they first emulate the Vista API, then use the Vista based implementation.
 
-1. use CriticalSection to emulate mutex
+Let's paste some code, the wait part:
+```C
+static BOOL __stdcall
+g_thread_xp_SleepConditionVariableSRW (gpointer cond,
+                                       gpointer mutex,
+                                       DWORD    timeout,
+                                       ULONG    flags)
+{
+  GThreadXpCONDITION_VARIABLE *cv = g_thread_xp_get_condition_variable (cond);
+  GThreadXpWaiter *waiter = g_thread_xp_waiter_get ();
+  DWORD status;
+
+  waiter->next = NULL;
+
+  EnterCriticalSection (&g_thread_xp_lock);
+  waiter->my_owner = cv->last_ptr;
+  *cv->last_ptr = waiter;
+  cv->last_ptr = &waiter->next;
+  LeaveCriticalSection (&g_thread_xp_lock);
+
+  g_mutex_unlock (mutex);
+  status = WaitForSingleObject (waiter->event, timeout);
+
+  if (status != WAIT_TIMEOUT && status != WAIT_OBJECT_0)
+    g_thread_abort (GetLastError (), "WaitForSingleObject");
+  g_mutex_lock (mutex);
+
+  if (status == WAIT_TIMEOUT)
+    {
+      EnterCriticalSection (&g_thread_xp_lock);
+      if (waiter->my_owner)
+        {
+          if (waiter->next)
+            waiter->next->my_owner = waiter->my_owner;
+          else
+            cv->last_ptr = waiter->my_owner;
+          *waiter->my_owner = waiter->next;
+          waiter->my_owner = NULL;
+        }
+      LeaveCriticalSection (&g_thread_xp_lock);
+    }
+
+  return status == WAIT_OBJECT_0;
+}
+
+
+```
+
+and the wake part:
+```C
+static void __stdcall
+g_thread_xp_WakeConditionVariable (gpointer cond)
+{
+  GThreadXpCONDITION_VARIABLE *cv = g_thread_xp_get_condition_variable (cond);
+  volatile GThreadXpWaiter *waiter;
+
+  EnterCriticalSection (&g_thread_xp_lock);
+
+  waiter = cv->first;
+  if (waiter != NULL)
+    {
+      waiter->my_owner = NULL;
+      cv->first = waiter->next;
+      if (cv->first != NULL)
+        cv->first->my_owner = &cv->first;
+      else
+        cv->last_ptr = &cv->first;
+    }
+
+  if (waiter != NULL)
+    SetEvent (waiter->event);
+
+  LeaveCriticalSection (&g_thread_xp_lock);
+}
+
+```
+
+and underlay win32 Event creation:
+```C
+static GThreadXpWaiter *
+g_thread_xp_waiter_get (void)
+{
+  GThreadXpWaiter *waiter;
+
+  waiter = TlsGetValue (g_thread_xp_waiter_tls);
+
+  if G_UNLIKELY (waiter == NULL)
+    {
+      waiter = malloc (sizeof (GThreadXpWaiter));
+      if (waiter == NULL)
+        g_thread_abort (GetLastError (), "malloc");
+      waiter->event = CreateEvent (0, FALSE, FALSE, NULL);
+      if (waiter->event == NULL)
+        g_thread_abort (GetLastError (), "CreateEvent");
+      waiter->my_owner = NULL;
+
+      TlsSetValue (g_thread_xp_waiter_tls, waiter);
+    }
+
+  return waiter;
+}
+```
+
+simply put:
+
+1. use CriticalSection as mutex
 2. use win32 Event to emulate condition variable blocking/waking
 3. when g_cond_wait being called, gthread create a TLS structure, which contains one win32 Event.
 4. it append this structure to corresponding condvar waiter list, then call WaitForSingleObject to enter that thread into sleep state
-5. g_cond_boardcast being called on other thread, it finds the event from waiter list, calling SetEvent to wake that Event.
+5. g_cond_boardcast being called on other thread, it finds the event from waiter list, calling SetEvent to wake wait thread.
 6. the wait thread return from WaitForSingleObject, check return value to know if it's being waked, or timeout
-
-Such logic seems correct to me at first glance, consider the gstreamer scenario, 
-if two sending thread needs to call call_on_gl_thread, we need two
-pairs of condvar for that, so for both sending threads, they are inserting their own callback
-then wake OpenGL control thread to run these callbacks, that should have following actions:
-
-1. OppenGL control thread enter sleep state through g_cond_wait (by WaitForSingleObject) to wait SendingThread1
-2. SendingThread1 wake it up, control thread 
-3. it should enter sleep again by g_cond_wait, wait SendingThread2 to wake it again, then run callback from SendingThread2
+7. if WaitForSingleObject timeout, it means this Event shouldn't be wake again, then it remove itself from corresponding condvar waiter list
 
 
-Since that TLS structure in g_cond_wait has only 1 win32 Event, that event will be reused
-by different condvar (there can't be more than one Event entered sleep state in one thread at same time, right?), when following sequence happened, we have problems:
 
-1. Control thread g_cond_wait on condvar1(for SendingThread1) WaitForSingleObject returned as TIMEOUT
-2. g_cond_wait thinks it's timeout, correct
-3. SendingThread1 calling g_cond_broadcast, which will call SetEvent, on an already TIMEOUT event
-4. Control thread call g_cond_wait on condvar2 (for SendingThread2), WaitForSingleObject immediately returned because it has a pending SetEvent by SendingThread1 !
-5. Control thread thinks it's being waken by SendingThread2.
-6. Doomed
+Such logic seems correct at first glance, I know there must be some issues in it,
+so I monitor these state while repeat running our application, then I discovered that
+if the application has more than one thread calling `call_on_gl_thread`, sometimes
+even before sending thread calling g_cond_boardcast, 
+the control thread just returning from g_cond_wait, like being waked ? 
+then I replay these steps in my mind, finally found the issue. Let me highlight the buggy part
+with pseudo code.
+
+the wake part:
+```C
+static void __stdcall
+g_thread_xp_WakeConditionVariable (gpointer cond)
+{
+  ...
+  EnterCriticalSection (&g_thread_xp_lock);
+  if (has_one_waiter){
+    remove it from waiter list since we only want to wake it once
+  }
+  ...
+  if (has_one_waiter)
+    SetEvent (waiter->event); // wake wait thread
+  LeaveCriticalSection (&g_thread_xp_lock);
+}
+```
+
+the wait part:
+```C
+static BOOL __stdcall
+g_thread_xp_SleepConditionVariableSRW (gpointer cond,
+                                       gpointer mutex,
+                                       DWORD    timeout,
+                                       ULONG    flags)
+{
+  ...
+
+  EnterCriticalSection (&g_thread_xp_lock);
+
+  append this to condvar waiter list
+
+  LeaveCriticalSection (&g_thread_xp_lock);
+
+  g_mutex_unlock (mutex);
+  status = WaitForSingleObject (waiter->event, timeout);
+  ...
+  g_mutex_lock (mutex);
+
+  if (WaitForSingleObject_return_timeout)
+    {
+      EnterCriticalSection (&g_thread_xp_lock);
+      if (this_still_in_condvar_waiter_list)
+        {
+          remove_this_from_condvar_waiter_list
+        }
+      LeaveCriticalSection (&g_thread_xp_lock);
+    }
+
+  return status == WAIT_OBJECT_0;
+}
+```
+
+Did you see the issue? on the wait thread, there will only be one Win32 Event for sleep/wake,
+since it can't be more than one Event entering sleeping state in one thread at same time right?
+so that Event will be reused by different condvar. condvar keeps waiter list
+for ownership bookmark. The manipulation might happen from both wake thread and wait thread,
+gthread use g_thread_xp_lock CriticalSection to avoid race, but there's a hole:
+if the wait thread already timeout and returned from WaitForSingleObject,
+right before manipulating the ownership, and on the wake thread it already entered
+g_thread_xp_lock and call SetEvent, then that Event will have a pending
+signaled state, such staled state lead next WaitForSingleObject return immediately,
+even wait thread calling g_cond_wait on a different condvar B. then
+g_cond_wait takes none-timeout branch and skip ownership manipulating step
+(it thinks manipulating should already taken place in wake thread, which still not happen).
+then if thread wait on condvar B again, it add self to condvar waiter list,
+makes that link list a self cycle. Thus g_cond_broadcast will deadloop.
 
 
-It's more likely to happen with our setup since we have multi input sources to Gstreamer OpenGL (which will create multi threads that calling call_on_gl_thread). This can't 
-grantee the Event is always used by exactly same condition_variable on
-the wake thread and wait thread !  You can  
-call g_cond_broadcast multi one condition_variable infinitely from one 
-thread, to make that Event 99% signaled, so the wait thread, matched 
-condition_variable almost immediately return from g_cond_wait, then if the wait thread using
-different condition_variable to wait other event, it reuse the signaled 
-state Event, thus thinks it already being waked, but actually this is completely
-signal from other condition_variable. 
-   After identifying this bug, fix should be easy, firstly create individual win32
-Event for every condition variable (of one thread), this can't be avoided since
-during the window of WaitForSingleObject and it returns, it's impossible to have
-another lock on that thread to assume the Event only used by one condvar.
-Now every condvar will only set their own Event, no more strange behavior anymore
+To summarize:
+
+
+1. It's impossible to let WaitForSingleObject being under mutex protection (otherwise it won't release the mutex during sleep)
+2. There will be window that win32 Event have pending signaled state, before bookmarking knows it, then such signaled state leaked from the ownership bookmarking
+3. Such leakage confusing following bookmarking, leads the self cycle deadloop.
+
+
+Problem 1 is unresolvable, let's see if 2/3 can be fixed. Partially problem 2 is due to the manipulation
+not keep sync with the win32 Event, we can always updating ownership, not only when timeout. So no matter
+if we're waken by TIMEOUT or WAIT_OBJECT_0, we always clean self from waiter list, then even there's pending
+state in Win32 Event, it won't leave staled entry in waiter linked list, thus avoid the deadloop.
+by definition condition variable is allowed to have 'spurious wakeup', even such staled state
+leads wake up of wrong condition variable, it's still 'correct' 
+(that's the reason why condition variable must always being used with another variable check,also within loop).
+so Problem 3 is not a problem, as long as there's no self cycle deadloop. 
+My patch introduced the hash table, every condition variable will have their own Event, the spurious wakeup
+can still happen, but only on same condition variable (if we don't want to create new Event everytime call g_cond_wait)
+
+Another possible fix could be calling ResetEvent as last step of ownership manipulation (also under protection of g_thread_xp_lock), then staled state won't leak to next WaitForSingleObject call. This approach has a misc drawback:
+the pending condition variable wake will lose everytime after g_cond_wait return. that might not be a big issue since
+current implementation also lose all pending wakeup before first g_cond_wait (win32 Event only created at first g_cond_wait).
 
 the full discussion and patch here:
 https://bugzilla.gnome.org/show_bug.cgi?id=762853
-
-
