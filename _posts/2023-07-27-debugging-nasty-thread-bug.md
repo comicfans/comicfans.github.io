@@ -1,6 +1,6 @@
 # Debugging a nasty thread bug
 
-Some years ago I worked on a GUI project, which needs to 
+In 2016 I'm working on a GUI project, which needs to 
 stream video on screen, while paint some UI over video layer.
 Our Project Manager decided to port this from ARM to X86.
 The challenge is how to make this UI painting portable while still performant.
