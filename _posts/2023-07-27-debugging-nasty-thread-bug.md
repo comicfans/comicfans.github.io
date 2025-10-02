@@ -242,10 +242,10 @@ simply put:
 1. use CriticalSection as mutex
 2. use win32 Event to emulate condition variable blocking/waking
 3. when g_cond_wait being called, gthread create a TLS structure (waiter), which contains one win32 Event.
-4. it append this structure to corresponding condvar waiter list, then call WaitForSingleObject to enter that thread into sleep state
+4. it append this waiter to corresponding condvar waiter list, then call WaitForSingleObject to enter that thread into sleep state
 5. g_cond_boardcast being called on other thread, it finds the event from waiter list, calling SetEvent to wake wait thread, also remove that waiter from waiter list so it won't be wake again
 6. the wait thread return from WaitForSingleObject, check return value to know if it's being waked, or timeout
-7. if WaitForSingleObject timeout, it means this Event shouldn't be wake again, then it remove itself from corresponding condvar waiter list, so it won't be wake again
+7. if WaitForSingleObject timeout, it remove waiter from condvar waiter list, so it won't be wake again
 
 
 
