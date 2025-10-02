@@ -306,16 +306,16 @@ g_thread_xp_SleepConditionVariableSRW (gpointer cond,
 
 Did you see the issue? on the wait thread, there will only be one Win32 Event for sleep/wake,
 since it can't be more than one Event entering sleeping state in one thread at same time right?
-so that Event is reused by different condvar. condvar use waiter list for that ownership bookmark.
+that Event is reused by different condvar, condvar use waiter list for the ownership bookmark.
 The manipulation might happen in either wake thread or wait thread,
 gthread use g_thread_xp_lock CriticalSection to avoid race, but there's a hole:
 if wait thread already returned from WaitForSingleObject with TIMEOUT,
-then wake thread call SetEvent after that, the Event will have a pending
-signaled state, this might not be an issue for this condvar,
+then wake thread call SetEvent after that (g_thread_xp_lock can't protect WaitForSingleObject itself, otherwise wake thread has no chance to read latest waiter list and wake it),
+the Event will have a pending signaled state, this might not be an issue for this condvar,
 but this staled state lead next WaitForSingleObject return immediately,
 even wait thread calling g_cond_wait on a different condvar B. 
-then wait thread thinks it's being waken up and expect the bookmark already taken place by that wakeup step
-(which is actually from previous different condvar wake)
+Then wait thread thinks it's being waken up and expect the bookmark already taken place by that wake action
+(which is actually from previous different condvar wake),
 it then takes none-timeout branch and skip ownership manipulating,
 leave the waiter in condvar waiter list, then thread wait on condvar B again,
 it add same waiter to waiter list, makes that link list a self cycle.
@@ -325,23 +325,23 @@ Thus g_cond_broadcast (it walk link list to wakeup all Event) will deadloop.
 To summarize:
 
 
-1. It's impossible to let WaitForSingleObject being under mutex protection (otherwise it won't release the mutex during sleep)
-2. There will be window that win32 Event have pending signaled state, this can't be tell only from WaitForSingleObject return value (since it already returned), then such signaled state leaked from the ownership bookmarking
-3. Such leakage confusing following bookmarking, leads the self cycle deadloop.
+1. It's impossible to let WaitForSingleObject being under mutex protection
+2. There will be window that win32 Event have pending signaled state, this can't be tell only from WaitForSingleObject return value (since it already returned), then such signaled state leaked to next condvar wait
+3. this staled signaled state confusing following bookmarking, leads the self cycle deadloop.
 
 
 Problem 1 is unresolvable, let's see if 2/3 can be fixed. Partially problem 2 is due to the manipulation
 not keep sync with the win32 Event, we can always updating ownership, not only when timeout. So no matter
 if we're waken by TIMEOUT or WAIT_OBJECT_0, we always clean self from waiter list, then even there's pending
-state in Win32 Event, waiter entry always being removed from waiter linked list, thus avoid the deadloop.
-by definition condition variable is allowed to have 'spurious wakeup', even such staled state
-leads wake up of wrong condition variable, it's still 'correct' 
-(that's the reason why condition variable must always being used with another variable check,also within loop).
-so strictly speaking Problem 3 is not an issue, as long as there's no self cycle deadloop. 
-My patch also improve Problem 3 by introducing the hash table, every condition variable have their own Event, the spurious wakeup
-can still happen, but only on same condition variable (if we don't want to create new Event everytime call g_cond_wait)
+state in Win32 Event, waiter linked list is still clean thus avoid the deadloop.
 
-Another possible fix could be calling ResetEvent as last step of ownership manipulation (also under protection of g_thread_xp_lock), then staled state won't leak to next WaitForSingleObject call. This approach has a misc drawback:
+by definition condition variable is allowed to have 'spurious wakeup', from application's view, it make no differences
+between 'spurious wakeup' by system and 'spurious wakeup' 'wrongly' by incorrect condvar (our case),
+so strictly speaking Problem 3 is not an issue (that's the reason why condition variable must always being used with another variable check,also within loop).
+, as long as there's no self cycle deadloop. My patch also improve Problem 3 by introducing the hash table, every condition variable have their own Event, spurious wakeup
+can still happen, but only on same condition variable.
+
+Another possible fix (without introducing per-condvar Event) could be calling ResetEvent as last step of ownership manipulation (also under protection of g_thread_xp_lock), then staled state won't leak to next WaitForSingleObject call. This approach has a misc drawback:
 all pending condition variable wake will be lost everytime after g_cond_wait return. That might not be a big issue since
 current implementation also lose all pending wakeup before first g_cond_wait (win32 Event only created at first g_cond_wait).
 
