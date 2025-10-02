@@ -102,7 +102,8 @@ not work as expected), these assert might also give false positive. With days an
 I slowly got the idea on how gthread emulate pthread under windows.
 
 gthread mimic pthread with minor naming change, It compile to exactly same pthread stubs under linux,
-Their Windows implementation is based on Vista API, for windows XP, they first emulate the Vista API, then use the Vista based implementation.
+on Windows >= Vista, it's implementation is to emulate pthread with Vista API,
+on windows XP, they first emulate the Vista API, then use the Vista based implementation.
 
 Let's paste some code, the wait part:
 ```C
