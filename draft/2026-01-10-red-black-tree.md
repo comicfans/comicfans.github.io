@@ -2,63 +2,52 @@
 
 
 People say that "If I can't coding it, then I don't understand it", so I spend some days to implement the red-black tree. 
-Most people feel confusing when learning the rules of RB-tree insertion and deletion just like me, so I want to clear these confusion in this blog.
-I read several blog , also asking chatgpt to explain some details, but found implementing it myself is still the best way to understand it.
-(Note: this blog only cover the unique-value implementation like std::set, but the basic idea still stay the same for std::multiset)
+Most people feel confusing when learning the rules of RB-tree insertion and deletion first time just like me,
+I hope this blog can helping you understand it better.
 
-Before entering RB-tree, let's revise binary search tree (BST) first, some confusion explain in RB-tree actually came from the convention in BST
+
+Let's revise binary search tree (BST) first, some confusion explanation in RB-tree actually came from the convention in BST
 the property of binary search tree:
 
 1. parent node value is greater than any node of left-child sub-tree, and less than any node of right-child sub-tree
 2. the in-order successor element of a node, is the left-most node of right-child sub-tree, in-order predecessor is the right-most node of left-child sub-tree
-3. new inserted node (if it's not duplicated), will always insert as leaf node, say, replace a null child, it will never 'replace' any existing node, or as the third child of some node
-4. most important rule (to help understanding RB-tree deletion): when remove a value, we never remove the node directly, we always swap it with in-order successor (or predecessor), then we remove the replaced node
+3. new inserted node (new unique value), will always insert as leaf node, say, replace a null child, it will never 'replace' any existing node, or being the third child of some node
+4. most important rule (to help understanding RB-tree deletion): when remove a value, it never remove the node directly, we always swap it with in-order successor (or predecessor), then we remove the replaced node
+5. you can use child as the new ROOT to construct new valid BST with only a few pointer adjustment in-between parent,sibling and nephew, no need to dive into whole sub-tree,
+   (this is called rotation, I find plot easier to understand than text description myself)
 
-rule4 is important for BST deletion: when the node you want to delete has two children (and corresponding sub-tree), you don't need to reconstruct whole structure
-under the deletion node, instead , the problem turned into a left-most(or right-most) node deletion.  Since it's left-most (or right-most) node, so either it has no children at all, which is a leaf node that can be deleted directly, or has only one child, then such child can be directly attached to parent node of deletion node. Consider following
-condition:
-
-graph
+    graph here
 
 
-because the deletion node is left-most node of right-child sub-tree (if it's right-most then everything mirrored), it can only contain right-child, and according to rule1, this sub-tree is all less than parent node, so after deletion, it can be directly attached to parent left-node (to replace the deletion node)
 
-Now let's get into RB-tree. Lots of post explain RB-tree by it's definition and operation rule first, I found myself better understand it by combine the rule and corresponding goal of the rule together, so I explain RB-tree rules as goal-first rules (please note, these rules differs to the ones listed by other reference):
+Now let's get into RB-tree. Most references and blogs focus on precise definition and operation rules,
+leave the explanation in pure math text description, 
+but I'll explain it by inaccurate 'idea' first, actual definition and rules second,
+keep the reason 'why we're dong this' in mind first makes it much easier to understand the details.
+(please note the list number also different to other references)
 
-1 why mark node with Red/Black color?  by combining color rules, this help BST avoiding decay to linear list
-2 how to avoid BST decay to linear list?  by enforcing longest path won't be longer than 2 times of shortest path
-3 how to enforce longest path shorter than 2 times of shortest path? Suppose that we have one such tree, then:
-      let path node difference (D) between longest (L) and shortest (S) path, will be shorter than shortest path, say
-      L <= S + S
-      S <= L / 2
-      D = L - S 
-      D <= S
-      so we can simply treat D as the number of red nodes, S as the number of black nodes
-      because D < S, so we can always spread red nodes in-between the black nodes, without any two red-nodes stay in row
-      only if longest path extend to its maximum value S*2 , we need so many red nodes ( D = S ), other than that, we can
-      have much fewer red nodes
-4 to ease the formula, we requires that root node are always black, since it's always the shared part of longest and shortest path,
-  set it to black won't affect the D (which must be red)
-5 to make logic more consist, we treat all empty nodes as black as well, so we have
-  L < S + S
-  D < S
-  S < L / 2
+1 why mark node with Red/Black color?  It's a way to help BST avoiding decay to linear list (by enforcing some rules)
+2 how to avoid BST decay to linear list?  by enforcing longest path shorter than 2 times of shortest path
+3 why BST requires no consequent red nodes? 
+4 why BST requires equal black height?
+  rule 3 and 4 should be considered together, they enforce that : 
 
-then we revise the rule of red coloring:
-red-node can't be consequent : red-node is to help filling the differences between longest and shortest path, as we keep it non-consequent,
-it won't be more than half of the longest path, so L < S * 2
+  RED(max) <= BLACK
+  longest path depth L = BLACK + RED(max)
+  shortest path depth S = BLACK
+  then 
+  L <= S + S 
+  this assume RB-Tree won't decay to linear list
 
-6 every path have exactly same black height  (same black node number)
+(some RB-Tree also requires root node must be black, we ignore this rule, it won't affect the basic properties of RB-Tree)
 
-(Please note: these rules are 'inversion explanation', just to help understanding the rules, not the mathematical prove. 
-Some properties such as 6, and the insertion/deletion actually came from 2-3-4 tree, 
-but this blog try to explain RBTree from BST perspective)
+according to these rules, we know that:
 
-according to black height definition, we know that:
-
-property 1 : RED node doesn't contribute to black height
+property 1 : RED node doesn't contribute to black height, so if modification (insert or delete) is red node, it will be the most simplest case
 
 property 2 : if we have two nodes, then parent must be Black, and child must be RED (otherwise the black height won't be equal)
+
+graph
 
 property 3:  if we have three nodes (as subtree), it can only be 
 
@@ -66,81 +55,262 @@ property 3:  if we have three nodes (as subtree), it can only be
    /  \         / \
    B  B        R   R
 
-   since any other structure violate RB-Tree rules
+   since any other structures violate RB-Tree rules
                        
-                       
-property 4:  all path black height equal, since two child sub-tree share same root path,
-             their sub-tree black height are also equal
 
-property 5: turn RED-NODE to BLACK won't lead consequent RED, only BLACK->RED can
+property 4:  all path black height equal, since two child sub-tree share same root node,
+             their sub-tree black height are also equal. And no matter which color the root node 
+             being changed to, both sub-tree still have same black height. 
+             any sub-tree of a valid RB-Tree, is also valid RB-Tree (note we don't require root must be black)
 
-
-so we'd better keep two ideas simultaneously, one set is the rule of RB-Tree, another is the goal of the rules.
-
-then we apply similar idea to RBT insertion: we begin with an valid RB-Tree, 
-inserting new node as BST : always insert as leaf, then try minimum steps to fix any violation, to make it an valid RB-Tree again. we try to fix it locally, only recursively back along parent if local fix impossible.  what does "local fix" mean ? If after applying some options (change structure or recoloring),  the black height is same (as before insertion) from higher level's perspective, then we already fixed it, it means we have some sparse room, to fill new nodes (either directly or indirectly into RED-position) without increasing longest height path.
+property 5: turn RED-NODE to BLACK won't introduce new consequent red condition, also won't make the sub-tree invalid RB-Tree
 
 
-1. treat new Node as RED. why RED ? because RED doesn't contribute to black height, so it's possible to only fix violation locally,
-   or just along current path (as we can see later). But if insert as BLACK, it immediately increase black height by 1, since all path have exactly same black height
-   that will requires violation fixing cascaded on all paths, which is sub-optimal.
+
+## insertion
+
+idea: keep the goal in mind before getting into details,
+a RB-Tree will be valid after insertion if:
+
+1. black height equal for all path
+2. no consequent red
+
+so our insertion strategy will be:
+
+1. not change black height,  so new inserted node should be RED (RBT property 1, RED doesn't contribute to black height),
+2. if we have consequent RED situation, try find nearby black nodes(parent/sibling/uncle), see if we can re-arrange them to move the 'extra red' in-between black nodes
+   (while maintaining exactly same black height)
+3. if 2 is not possible, then we try to make sub-tree valid RB-Tree (while maintaining same black height), 
+   and push the extra red color upwards, expect we can resolve it at higher level
+
+
+by applying this idea, we will either fixing the violation at some step, or making higher and higher sub-tree valid RB-Tree until we reach root,
+so whole tree fixed. and RBTree property 4 also playing important rule here: for an valid RB-Tree, 
+any sub-tree is also valid RB-Tree, and left-right child will also have same black height
+
+
+
+1. insert new Node as RED.
 
 2. if the parent is BLACK, then we already done (property 1) 
    graph
 
 3. if the parent is RED,  then it must contains no children before insertion (othwerwise violate property 2),
-   and since root is always black ,so parent is also not root, so possible structure is (position can be left or right, doesn't matter)
+   so possible structures are (position can be left or right, doesn't matter)
+             P(arent)=RED  is root node                            P = BLACK
+             /                                   ===>            /
+          N(ew)= RED                                            N= RED
+
+
+
             G(grandparent)=BLACK                  grandparent must be black (because parent is already RED)
             /              \
-         P(arent)=RED       U(ncle)            uncle might not exist, if exist, then must be RED
+         P(arent)=RED       U(ncle)            uncle might not exist, or must be RED
          /
       N(ew)=RED
 
-most people (including me) feels confusing at these cases testing at first time due to the 'rotation', I try to avoid this term first, just remember our goal: try minimal steps to fix the 
-violation locally
 
 3.1  if uncle not exist, then we simply turn G/P/N to balanced structure , so black height not changed
      and everything done. Why color it as BLACK-RED-RED,  not RED-BLACK-BLACK ? both coloring won't change black height, but RED-BLACK-BLACK might lead consequent red (with grandgrandparent), which requires recursively fixing, is sub-optimal.
-
-     graph
-     
-3.2 if uncle exist, then it must be RED. for such situation, we color Grandparent as red, P/U as BLACK (so the black height), then sub-tree under grandparent is fixed, but if grandgrandparent is red
-we need recusively fix it.  An important point is that grandparent rooted sub-tree is balanced and black height equals to before insertion, which means if all step of recursive preserve these two properties, and not introduce new potential violation, we already fix the whole tree.
-
-
-4 let's consider if this is possible: this action will turn a BLACK-RED-RED structure to  RED-BLACK-BLACK structure, such conversion won't change black height, just move down the parent black into two children root. consider property 5, this action never break uncle tree, and same as 3.2, it will make grandparent rebalanced (also black height not change), only potentially break consequent red rule, when recursive reach any black node (ROOT is always black), then everything is fine there.
-
-
-Where is the 'rotation' ?
-actually I think it's more implementation detail than helping understanding rebalance.
-consider we have following BST structure, and want to turn it into 
-      (G)B            (P)B 
-      /               /  \
-    (P)R   =>     (N)R   (G)R
+      G =BLACK                         P = RED
+     /                               /     \
+    P = RED          =>             N=RED   G=RED
    /
- (N)R
+  N = RED
 
-because of BST nature, you can wrote the code to 'right rotate' to make left structure into right one.
-I find the plot much easier to understand without 'rotation' term.
+     
+3.2 if uncle exist, then it must be RED (otherwise breaks black height rule). For such situation, we color Grandparent as red, P/U as BLACK (so the black height), then sub-tree under grandparent is fixed, but if grandgrandparent is red, it's possible to lead consequent red with grandgrandparent so we need recursively fix it (and then we treat G as 'new inserted node')
+           G = BLACK                                G = RED
+          /         \                               /      \
+       P = RED       U = RED           =>         P =BLACK   U = BLACK
+       |                                           |
+       N = RED                                    N = RED
+
+this is the situation that not enough black nodes nearby so we push the red color upwards and need further fixing
+An important point is that grandparent rooted sub-tree is now valid and black height equals to the value before insertion.
 
 
-then deletion: deletion is more complex, but basic idea stay the same :make minimum steps to fix the violation, 
-try locally first. 
-and important point: we're not deleting target node directly, we always delete 
-the switched in-order successor as BST, so that node is always a leaf node, or 
-a black node with only one right-red child. This makes it much easier to understand
-(depends on target node position, you can also apply special operation directly without
-swapping, but my implementation always do swapping first
-without goto which I think is clear)
+
+
+4. condition 3.1/3.2 only consider the first iteration (insert node is leaf) condition, during recursive, it's possible to see different variants of 3
+   (note, we only recursive after 3.2, so next recursive we'll always see the lowest changed node as RED)
+
+4.1 if new parent is the root, just turn it into black (so tree black height finally increase one).  Remember , changed sub-tree still
+    maintain exactly same black height as before insertion, so it's sibling tree don't need any adjustment.
+
+                       P(arent) = RED       <---  is root                                 P(arent)  = BLACK
+                      /             \                                                     /               \
+  (previous grandparent)          S(ibling) BLACK                  ===>                N(ew)RED          S(ibling) BLACK
+              L(owest) RED         /     \                                        
+                 /   \             ...    ...                                      
+               ...
+
+
+4.2 similar to 3.2, just with more sub-tree (apply 3.2 fix and then recursive)
+                 G(randparent) = BLACK                                         G (R)
+                 /                     \                                       /  \
+             P(arent) = RED             U(ncle) RED          ========>      P (B)   U (B)
+             /         \                 /  \                                  
+          N(ew) RED    S(ibling) BLACK      ...                                
+           / \ 
+           ...
+
+
+4.3 if new parent is not root, uncle is BLACK, sit far away to new appeared RED node 
+         G(B)                        P(B)                  use P as new root, then child S (between P and G horizontally) will become the new child of G
+        /    \                      /   \                  after this, S still being inbetween P and G horizontally, then recolor P and G, 
+      P(R)   U(B)                N(R)   G(R)
+     /  \     / \      =>              /   \
+    N(R) S(B)  ... ...               S(B)  U(B)
+   / \   / \
+c1(B) c2(B) .. ...
+   in this diagram, left sub-tree has too many red node which can't fit , and we know uncle tree have black-black (G-U) structure, so we push that red color to uncle tree
+   left state (before fixing), every subtree is already balanced, N(R), S(B), U(B) all have same black height, so after moving S as G child, G(R) is also balanced
+   and path at N(R) changed from B->R->R  to B->R, black height also unchanged, thus after fixing, P is balanced. since it's Black, so no further fixing required
+
+   
+
+4.4 similar to 4.3, but new appeared RED and uncle near each other, so we have
+      G(B)                        P (R)
+     /     \                     /    \
+    P(R)   U(B)     ==/=>      S(B)    G(B)
+   /    \                             /   \
+  S(B)  N(R)                        N(R)   U(B)
+  if we simply apply 4.3 operation, then we'll find that we can't make it rebalanced easily,
+so we pre-process it at P(R) level, make it become
+
+        G(B)
+       /     \
+      N(R)   U(B)
+     /   \
+    P(R)  c2(B)
+   /   \
+  S(B)  c1(B)
+
+since N and P are both red, so this also won't change black height, now it became situation 4.3 , which can be fixed by that step
+
+That's all possible conditions to fix after insertion.
+
+
+
+
+note it's possible to fix violation by other way, say, we look into some random node to see if it can hold one extra color and re-color all sub-tree, this can also be valid fixing,
+apparently slower.
+
+
+For deletion the basic idea still stay the same : try to re-arrange nearby nodes to fix violation,
+if not possible, then try to make higher sub-tree valid, push the problem upwards.
+And important point: we're not deleting target node directly, we always delete the switched in-order successor as BST.
+
 
 so our deletion steps: 
 
-1. always swap 
+
+1. swap target node with in-order successor node, then deleting the swapped node.  then the problem turned into delete a leaf node,
+or a node with right only child (because the in-order successor is leftmost of right sub-tree).
+
+remember RBTree property 1: if the node to delete is red, it doesn't affect black height, neither will introduce consequent red violation, 
+and according to RBT property 2, it also can't contain one child, so it will be the simplest condition, just remove it
+
+2. the deletion node is red condition:
+            P (BLACK)                       
+           /             
+          D Red 
+
+
+now left conditions is to delete a black node, which will decrease its path black height, but there's an interesting fact 
+which actually make RB-Tree deletion much easier to understand: if there're one nearby red node, no matter if it's the child, parent, sibling, or nephew
+it's always possible to re-arrange nearby nodes to 'move' that red to deleted node path, then color it black to restore the decreased height ,
+so problem resolved locally
+
+3.1 use child red to restore black height:
+
+     P (can be red or black)   P (color doesn't change)                       
+     /       \                 /              \         
+    D (black) S(BLACK)  =>   C (black)         S(BLACK) 
+     \                                                  
+      C (red)                                           
+
+3.2 use parent red to restore black height:
+
+       P (RED)                                P(BLACK)     
+      /       \               ====>                  \     
+  D (BLACK)   S(BLACK)                               S(RED)
+
+3.3 use sibling red to restore black height (so parent must be black)
+         P (BLACK)                                       S(BLACK)
+        /       \                                     /             \
+    D(BLACK)    S(RED)                 =====>     P(BLACK)        N2(BLACK)
+                 /   \                                \  
+           N1(BLACK)  N2(BLACK)                       N1(RED)
+N1/N2 must exist because equal black height rule
+
+3.4 the only nephew is red and far away(so sibling must be BLACK)
+
+      P (can be RED or BLACK)                     S(color as P original color)
+          /         \                              /              \
+     D(BLACK)       S(BLACK)          ==>   P(turned to BLACK)     N (turned to BLACK)
+                       \
+                        N(RED)
+
+3.5 only nephew is red and nearby (so sibling must be BLACK)
+
+      P (can be RED or BLACK)                     P(can be RED or BLACK)
+          /         \                              /              \
+     D(BLACK)       S(BLACK)          ==>   D(BLACK)       N (turned to BLACK)             =>    now can be handled as 3.4
+                    /                                               \
+                 N(RED)                                              S(turned to RED)
+
+3.6 both nephew is red: (so sibling must be BLACK)
+
+      P (can be RED or BLACK)                     S(color as P original color)
+          /         \                              /                \
+     D(BLACK)       S(BLACK)          ==>   P(turned to BLACK)       N2 (turned to BLACK) 
+                    /     \                        \                    
+                 N1(RED)   N2(RED)                  N1(RED)            
+      
+
+then all cases listed in 3 is resolved, they keep same black height as before deletion, and these transform won't introduce
+consequent red violation to sibling nor parent, so RB-tree already being fixed.
+
+then what left is 'too many black' condition, no red nodes as child/parent/sibling/nephew
+
+4 this is the only possible condition for first step process
+
+   P (B)                       P(B)
+  /    \     ==>                   \
+D(B)   S(B)                         S(R)
 
 
 
+during processing in 4, although we didn't restore the black height, but make one-level-more sub-tree re-balanced,
+that said, we 'push' the 'black height decrease 1' condition upwards. as we see in 4, root node of fixed sub-tree are always black
+(because all condition with nearby red node in sub-tree can be resolved without requiring further fixing), so from higher
+level node's perspective, it's nothing changed in that sub-tree (lowest node still black) except its black height decrease 1, 
+so it's exactly same as we delete one black node in first iteration 
+(both deletion node and that sub-tree root is black, so all color based triaging and assumption still applied)
+then transform in 3 and 4 can be applied again, until we found nearby RED child, or reach the ROOT (whole tree black height deceased one). 
 
-I didn't including my implementation code here since it's not the best, I hope readers not being misguided by my sub-optimal code,
-and I encourage readers to understand the idea of every action, then implement it theirselves. Personally I can't 
-write a correct implementation without understanding the basic idea of RB-Tree, neither did I can fully understand the details 
-without finish (and fixing) the implementation.
+the differences is that during recursive, we will have some variants of previous conditions (due to changed branch now have child sub-tree)
+and we won't use red color from child anymore (if current lowest child has a red node which exists before previous round, then it should already being used to fix the tree,
+so only possibility is that red node is introduced to rebalance current lowest child sub-tree, which can't be moved otherwise sub-tree became imbalance again)
+
+so  3.1 not applied anymore
+    3.2 ~ 3.6, nothing changed except the node is not for deletion, still attached with it's parent, RBT fixed complete
+
+    4 will have one more variant:
+
+       P (B)                                   P(B)
+      /    \                                 /     \
+    L(B)   S(B)               ===>         L(B)     S(turned to RED)
+    /\      /  \                           / \      /  \
+   ......  N1(B) N2(B)                    ...     N1(B) N2(B)
+  we turn it into balanced valid RB-Tree, also pushing 'black height decrease 1' condition upwards
+
+now all condition in deletion being discussed ( some simplest condition omitted, like insert/delete as root), I hope
+this blog can help you understanding RB-Tree
+
+
+I encourage readers to implement it themself. Personally I can't 
+write a correct implementation without understanding the basic idea, neither did I can fully understand the details 
+without finishing the implementation(which also means fixing all the bugs).
