@@ -99,6 +99,9 @@ class AniNode:
 
     def draw_line(self,dir:Dir)->Line:
 
+        #if self.tree_node.value == 1 and dir == Dir.LEFT and self.tree_node.children_[dir.value]:
+        #    pdb.set_trace()
+
         if not self.tree_node.children_[dir.value]:
             return Line(self.group_node.get_bottom(),self.group_node.get_bottom())
 
@@ -120,7 +123,7 @@ class AniNode:
         self.children_edges = []
         for value in Dir:
             self.children_edges.append(always_redraw(
-                                       lambda: self.draw_line(value)))
+                                       lambda value=value: self.draw_line(value)))
             self.ani_context.scene.add(self.children_edges[-1])
         
 
@@ -145,7 +148,7 @@ class BST:
         ani_context.scene.add(self.rect)
 
 
-    def find_pos(self, value)-> Tuple[Node, dir, Node]:
+    def find_pos(self, value, show_animation)-> Tuple[Node, dir, Node]:
         animation = []
         parent = None
         next_try = self.root
@@ -155,16 +158,17 @@ class BST:
             next_try
             if value == next_try.value:
                 animation.append(self.ani_context.node_for(value).group_node.animate.move_to(self.ani_context.node_for(next_try.value).group_node.get_top()))
-
                 return (parent, child_dir, next_try)
             parent = next_try
             child_dir = Dir.LEFT if value < parent.value else Dir.RIGHT
             target_node = self.ani_context.node_for(next_try.value).group_node
             animation.append(self.ani_context.node_for(value).group_node.animate.move_to(target_node.get_left() - np.array([CIRCLE_RADIUS,0,0]) if child_dir is Dir.LEFT else target_node.get_right() + np.array([CIRCLE_RADIUS,0,0])))
             next_try = parent.children_[child_dir.value]
-            self.flush_animation(animation)
+            if show_animation:
+                self.flush_animation(animation)
 
-        self.flush_animation(animation)
+        if show_animation:
+            self.flush_animation(animation)
         return (parent, child_dir, next_try)
 
 
@@ -227,7 +231,7 @@ class BST:
     def rotate(self, value_or_node, dir:Dir):
         node = value_or_node
         if not isinstance(value_or_node, Node):
-            node = self.find_pos(value_or_node)[2]
+            node = self.find_pos(value_or_node,False)[2]
 
         node_is_root = (node == self.root)
             
@@ -236,7 +240,6 @@ class BST:
         if node_is_root:
             self.root = new_root
 
-        pdb.set_trace()
         self.node_position_animation([])
 
     def insert(self, value)->bool:
@@ -249,7 +252,7 @@ class BST:
             self.node_position_animation(animation)
             return True
 
-        parent,dir,node = self.find_pos(value)
+        parent,dir,node = self.find_pos(value, True)
         if parent.children_[dir.value]:
             # we found duplicated value
             return False
@@ -264,7 +267,8 @@ class BSTInsert(Scene):
         bst = BST(ani_context)
         bst.insert(0)
         bst.insert(1)
-        bst.rotate(0, Dir.LEFT)
+        bst.insert(2)
+        bst.rotate(1, Dir.LEFT)
         self.wait(1)
 
 
