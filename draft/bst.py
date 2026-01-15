@@ -1,4 +1,5 @@
 from manim import Circle,Text,VGroup,Line,always_redraw,Animation,Scene,Create,Rectangle,FadeOut
+from manim.typing import Point3D
 from copy import deepcopy
 from dataclasses import dataclass
 import random
@@ -105,20 +106,21 @@ class AniContext:
 
 class AniNode:
 
-    def draw_line(self,dir:Dir)->Line:
-
-        #if self.tree_node.value == 1 and dir == Dir.LEFT and self.tree_node.children_[dir.value]:
-        #    pdb.set_trace()
-
-        if not self.tree_node.children_[dir.value]:
-            return Line(self.group_node.get_bottom(),self.group_node.get_bottom())
-
-        target_ani = self.ani_context.node_for(self.tree_node.children_[dir.value])
-
-        return Line(self.group_node.get_bottom(),
-                    target_ani.group_node.get_top())
 
 
+    def update_line(self, line, dt, dir):
+
+        target_node = self.tree_node.children_[dir.value]
+        if not target_node:
+            target_pos = self.group_node.get_bottom()
+        else:
+            target_ani = self.ani_context.node_for(target_node)
+            target_pos = target_ani.group_node.get_top()
+
+        current_end = self.group_node.get_bottom()
+        new_end = current_end + (target_pos - current_end) * min(dt *2 ,1)
+
+        line.put_start_and_end_on(self.group_node.get_bottom(), new_end)
 
     def __init__(self, ani_context, tree_node):
         self.ani_context = ani_context
@@ -130,14 +132,15 @@ class AniNode:
                          #, color = manim.RED
                          )
         self.text.move_to(self.circle)
-        self.group_node = VGroup(self.circle, self.text)
-        self.group_node.move_to(NODE_INIT_POS)
         self.children_edges = []
-        for value in Dir:
-            self.children_edges.append(always_redraw(
-                                       lambda value=value: self.draw_line(value)))
+        for dir in Dir:
+            line = Line(self.circle.get_bottom(),self.circle.get_bottom())
+            self.children_edges.append(line)
+            #line.add_updater(lambda line,dt,dir=dir: self.update_line(line,dt,dir))
             self.ani_context.scene.add(self.children_edges[-1])
         
+        self.group_node = VGroup(self.circle, self.text, *self.children_edges)
+        self.group_node.move_to(NODE_INIT_POS)
 
     def set_color(self, manim_color, animation : list[Animation]):
         for obj in [self.circle,self.text]:
@@ -261,7 +264,7 @@ class BST:
                 if show_animation:
                     #when show animation, this must be node
                     animation.append(self.ani_context.node_for(next_try).text.animate.set_color(manim.RED))
-                    animation.append(self.ani_context.node_for(value_or_node).group_node.animate.move_to(self.ani_context.node_for(next_try).group_node.get_top()))
+                    animation.append(self.ani_context.node_for(value_or_node).group_node.animate.move_to(self.ani_context.node_for(next_try).circle.get_top()))
                     self.flush_animation(animation)
                     animation.append(self.ani_context.node_for(next_try).text.animate.set_color(manim.WHITE))
                     self.flush_animation(animation)
@@ -269,7 +272,7 @@ class BST:
                 return (parent, child_dir, next_try)
             parent = next_try
             child_dir = Dir.LEFT if value < parent.value else Dir.RIGHT
-            target_node = self.ani_context.node_for(next_try).group_node
+            target_node = self.ani_context.node_for(next_try).circle
             next_try = parent.children_[child_dir.value]
             if show_animation:
                 animation.append(self.ani_context.node_for(value_or_node).group_node.animate.move_to(target_node.get_left() - np.array([CIRCLE_RADIUS,0,0]) if child_dir is Dir.LEFT else target_node.get_right() + np.array([CIRCLE_RADIUS,0,0])))
@@ -295,15 +298,34 @@ class BST:
             return
 
 
-        pos = current_depth * manim.DOWN + position_node.merged_range[-1][0] * manim.RIGHT
+        children_pos = [None,None]
 
-        animation.append(self.ani_context.node_for(position_node.tree_node).group_node.animate.move_to(pos))
-
-        self.assign_position(position_node.children[Dir.LEFT.value],animation,
-                                        current_depth +1)
-        self.assign_position(position_node.children[Dir.RIGHT.value],animation,
-                                        current_depth +1)
+        for dir in Dir:
+            children_pos[dir.value] = self.assign_position(position_node.children[dir.value],animation,
+                                                           current_depth +1)
         
+        pos = current_depth * manim.DOWN + position_node.merged_range[-1][0] * manim.RIGHT
+        ani_node = self.ani_context.node_for(position_node.tree_node)
+        animation.append(ani_node.circle.animate.move_to(pos))
+        animation.append(ani_node.text.animate.move_to(pos))
+        half = np.array([0, -CIRCLE_RADIUS,0])
+        for dir in Dir:
+            target_pos = pos + half
+            if position_node.children[dir.value]:
+                target_pos = children_pos[dir.value] - half
+
+            assert target_pos is not None
+
+            from_pos = pos + half
+            if np.all(from_pos == target_pos):
+                # manim error
+                target_pos = target_pos +manim.UP * 0.01
+
+            animation.append(ani_node.children_edges[dir.value].animate.put_start_and_end_on(pos + half,
+                                                                                             target_pos + manim.UP * 0.01))
+
+        return pos
+
 
     @staticmethod
     def rect_pos(height):
@@ -328,7 +350,6 @@ class BST:
 
         new_center_y = -screen_height / 2 + CIRCLE_RADIUS*1.5
         new_center_x = (screen_left + screen_right) / 2
-        #pdb.set_trace()
 
         #animation.append(self.rect.animate.stretch_to_fit_width(screen_right - screen_left).stretch_to_fit_height(screen_height).move_to(np.array([0,new_center_x,0])))
         animation.append(self.rect.animate.stretch_to_fit_width(screen_right - screen_left).stretch_to_fit_height(screen_height).move_to(np.array([new_center_x,new_center_y,0])))
@@ -390,16 +411,16 @@ class BSTInsert(Scene):
         #bst.insert(-5)
         #bst.insert(5)
         #bst.insert(-3)
-        ###pdb.set_trace()
         #bst.insert(3)
         ##bst.rotate(1, Dir.LEFT)
         #self.wait(1)
         #return
         insert_value = [0, -5, 5, -7, -3, 3, 7]
 
+        #pdb.set_trace()
         for i in insert_value:
             bst.insert(i)
 
-        bst.rotate(insert_value[0],Dir.LEFT)
+        bst.rotate(0,Dir.LEFT)
         self.wait(1)
 
