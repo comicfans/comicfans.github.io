@@ -260,16 +260,22 @@ class BST:
             if value == next_try.value:
                 if show_animation:
                     #when show animation, this must be node
+                    animation.append(self.ani_context.node_for(next_try).text.animate.set_color(manim.RED))
                     animation.append(self.ani_context.node_for(value_or_node).group_node.animate.move_to(self.ani_context.node_for(next_try).group_node.get_top()))
-                self.flush_animation(animation)
+                    self.flush_animation(animation)
+                    animation.append(self.ani_context.node_for(next_try).text.animate.set_color(manim.WHITE))
+                    self.flush_animation(animation)
+
                 return (parent, child_dir, next_try)
             parent = next_try
             child_dir = Dir.LEFT if value < parent.value else Dir.RIGHT
             target_node = self.ani_context.node_for(next_try).group_node
+            next_try = parent.children_[child_dir.value]
             if show_animation:
                 animation.append(self.ani_context.node_for(value_or_node).group_node.animate.move_to(target_node.get_left() - np.array([CIRCLE_RADIUS,0,0]) if child_dir is Dir.LEFT else target_node.get_right() + np.array([CIRCLE_RADIUS,0,0])))
-            next_try = parent.children_[child_dir.value]
-            self.flush_animation(animation)
+                animation.append(self.ani_context.node_for(parent).text.animate.set_color(manim.RED))
+                self.flush_animation(animation)
+                animation.append(self.ani_context.node_for(parent).text.animate.set_color(manim.WHITE))
 
         if show_animation:
             self.flush_animation(animation)
@@ -389,10 +395,11 @@ class BSTInsert(Scene):
         ##bst.rotate(1, Dir.LEFT)
         #self.wait(1)
         #return
+        insert_value = [0, -5, 5, -7, -3, 3, 7]
 
-        for i in range(20):
-            bst.insert(random.randint(-20,20))
-            #self.wait(1)
+        for i in insert_value:
+            bst.insert(i)
 
+        bst.rotate(insert_value[0],Dir.LEFT)
         self.wait(1)
 
