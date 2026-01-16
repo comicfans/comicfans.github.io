@@ -1,4 +1,4 @@
-from bst import Node,Dir
+from bst import TreeNode,Dir
 from enum import Enum
 from typing import Tuple
 import manim
@@ -8,7 +8,7 @@ class Color(Enum):
     BLACK = 0
     RED = 1
 
-class RBTNode(Node):
+class RBNode(TreeNode):
     def set_color(self, color: Color, animation: list[Animation]):
         if self.color_ == color:
             return []

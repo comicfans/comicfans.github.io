@@ -24,22 +24,39 @@ class TreeNode:
         self.children_ = [None, None]
         self.parent_dir_ = [None, None]
 
+    def disconnect(self):
+        self.parent_ = None
+        for dir in Dir:
+            self.children_[dir.value] = None
+
     def set_child(self, dir: Dir, node):
         self.children_[dir.value] = node
-        node.parent_ = self
+        if node:
+            node.parent_ = self
 
     def swap(self, other):
         if self == other:
             return
-        self.children,other.children = other.children,self.children 
-        self.parent_dir,other.parent_dir = other.parent_dir,self.parent_dir
+
+        if other:
+            self.children_,other.children_ = other.children_,self.children_
+            other.redirect_children_parent()
         self.redirect_children_parent()
-        other.redirect_children_parent()
+        # two node might point to each other, then there'll be self-loop in parent/children
+        # now break them
+        for test in [self, other]:
+            if not test:
+                continue
+            if test.parent_ == test:
+                test.parent_ = None
+            for dir in Dir:
+                if test.children_[dir.value] == other:
+                    test.children_[dir.value] = None
         
     def redirect_children_parent(self):
         for dir in Dir:
             if self.children_[dir.value]:
-                self.children_[dir.value].parent_dir[0] = self
+                self.children_[dir.value].parent_ = self
 
     def rotate(self, dir: Dir):
 
@@ -75,13 +92,12 @@ class TreeNode:
 
 class AniNode:
 
-    def __init__(self, scene, tree_node):
+    def __init__(self, scene, value, radius = CIRCLE_RADIUS):
         self.scene = scene
-        self.tree_node = tree_node
-        self.circle = Circle(radius=CIRCLE_RADIUS, 
+        self.circle = Circle(radius=radius, 
                              stroke_color = manim.WHITE
                              )
-        self.text = Text(str(tree_node.value), font_size = 24
+        self.text = Text(str(value), font_size = 24
                          #, color = manim.RED
                          )
         self.text.move_to(self.circle)
@@ -111,10 +127,16 @@ class LayoutPositionNode:
 
         self.tree_node: TreeNode = None # corresponding tree node
 
-    def total_range(self)->Tuple[float,float]:
+    @staticmethod
+    def total_range(node)->Tuple[float,float]:
+
+        if not node:
+            return [0,1]
+
+
         left = float('inf')
         right = float('-inf')
-        for r in self.merged_range:
+        for r in node.merged_range:
             left = min(left, r[0])
             right = max(right, r[1])
         return left, right
@@ -191,7 +213,7 @@ class LayoutPositionNode:
         return merged
 
 class AnimationCallback:
-    def delete_node(self, tree_node,animation :list[Animation]):
+    def delete_node(self):
         pass
 
     def init_callback(self, tree):
@@ -200,13 +222,13 @@ class AnimationCallback:
     def on_new_tree_node(self, tree_node):
         pass
 
-    def on_search_begin(self, search_node):
+    def on_search_begin(self, value):
         pass
 
-    def on_search_progress(self, search_node, parent, current):
+    def on_search_progress(self, value, parent, current):
         pass
 
-    def on_search_end(self, tree_node, duplicated_found):
+    def on_search_end(self, value, duplicated_found):
         pass
 
 class RealAnimationCallback(AnimationCallback):
@@ -219,8 +241,15 @@ class RealAnimationCallback(AnimationCallback):
 
 
 
-    def delete_node(self, tree_node,animation :list[Animation]):
-        animation.append(tree_node.group_node.animate.move_to(NODE_INIT_POS))
+    def delete_node(self, tree_node):
+        animation = []
+        del_ani = self.node_for(tree_node)
+        animation.append(del_ani.group_node.animate.move_to(NODE_INIT_POS))
+        # also animation edge disappear
+        animation.append(del_ani.parent_edge.animate.put_start_and_end_on(NODE_INIT_POS, NODE_INIT_POS))
+        self.flush_animation(animation)
+        animation.append(FadeOut(del_ani.group_node))
+        self.flush_animation(animation)
         #animation.append(tree_node.group_node.animate.set_optical(0))
 
 
@@ -242,38 +271,45 @@ class RealAnimationCallback(AnimationCallback):
     def on_new_tree_node(self, tree_node):
 
         assert tree_node not in self.node_map
-        self.node_map[tree_node] = AniNode(self.scene, tree_node)
+        self.node_map[tree_node] = AniNode(self.scene, tree_node.value)
         animation = [Create(self.node_for(tree_node).group_node)]
         self.flush_animation(animation)
 
-    def on_search_begin(self, search_node):
+    def on_search_begin(self, value):
         self.search_animation = []
+        self.search_ani_node = AniNode(self.scene, value, CIRCLE_RADIUS * 0.75)
 
-    def on_search_progress(self, search_node, parent, current):
+    def on_search_progress(self, value, parent, current):
 
         assert current
 
         compare_ani_node = self.node_for(current)
-        search_ani_node = self.node_for(search_node)
 
-        if search_node.value == current.value:
+        if value == current.value:
             #when show animation, this must be node
             self.search_animation.append(compare_ani_node.text.animate.set_color(manim.RED))
-            self.search_animation.append(search_ani_node.group_node.animate.move_to(compare_ani_node.circle.get_top()))
+            self.search_animation.append(self.search_ani_node.group_node.animate.move_to(compare_ani_node.circle.get_top()))
             self.flush_animation(self.search_animation)
             return
 
 
         self.search_animation.append(compare_ani_node.text.animate.set_color(manim.RED))
         target_node = compare_ani_node.circle
-        self.search_animation.append(search_ani_node.group_node.animate.move_to(target_node.get_left() - np.array([CIRCLE_RADIUS,0,0]) if search_node.value < current.value else target_node.get_right() + np.array([CIRCLE_RADIUS,0,0])))
+
+        offset = CIRCLE_RADIUS * 0.5
+        target_pos = target_node.get_left() - np.array([offset,0,0]) if value < current.value else target_node.get_right() + np.array([offset,0,0])
+        target_pos = target_pos - np.array([0,offset,0])
+
+        self.search_animation.append(self.search_ani_node.group_node.animate.move_to(target_pos))
         self.flush_animation(self.search_animation)
         self.search_animation.append(compare_ani_node.text.animate.set_color(manim.WHITE))
 
-    def on_search_end(self, tree_node, duplicated_found):
+    def on_search_end(self, value, duplicated_found):
         # we found duplicated value
-
+        self.search_animation.append(FadeOut(self.search_ani_node.group_node))
         self.flush_animation(self.search_animation)
+        del self.search_animation
+        del self.search_ani_node
 
     def on_delete_node(self, tree_node):
         to_delete_ani = self.node_for(tree_node)
@@ -318,7 +354,7 @@ class RealAnimationCallback(AnimationCallback):
         position_node = LayoutPositionNode.fill_width(tree.root)
 
         self_depth = BST.depth(tree.root)
-        new_range = position_node.total_range()
+        new_range = LayoutPositionNode.total_range(position_node)
 
         animation = []
         self.assign_position(None,position_node,animation)
@@ -346,32 +382,35 @@ class BST:
         self.animation_callback = animation_callback
         self.animation_callback.init_callback(self)
 
-    def find_node(self, value)->TreeNode:
-        temp_node = self.new_node(value, with_animation = False)
+    def find_node(self, value, with_animation)->TreeNode:
+        if with_animation:
+            return self.find_pos(value)[2]
+
+
         temp = self.animation_callback
         self.animation_callback = DummyAnimationCallback()
-        ret = self.find_pos(temp_node)[2]
+        ret = self.find_pos(value)[2]
         self.animation_callback = temp
         return ret
 
-    def find_pos(self, search_node)-> Tuple[TreeNode, dir, TreeNode]:
+    def find_pos(self, value)-> Tuple[TreeNode, dir, TreeNode]:
         parent = None
         next_try = self.root
         child_dir = None
 
-        self.animation_callback.on_search_begin(search_node)
+        self.animation_callback.on_search_begin(value)
 
         while next_try:
-            self.animation_callback.on_search_progress(search_node, parent, next_try)
-            if search_node.value == next_try.value:
-                self.animation_callback.on_search_end(search_node, True)
+            self.animation_callback.on_search_progress(value, parent, next_try)
+            if value == next_try.value:
+                self.animation_callback.on_search_end(value, True)
                 return (parent, child_dir, next_try)
             parent = next_try
-            child_dir = Dir.LEFT if search_node.value < parent.value else Dir.RIGHT
+            child_dir = Dir.LEFT if value < parent.value else Dir.RIGHT
             next_try = parent.children_[child_dir.value]
 
 
-        self.animation_callback.on_search_end(search_node, False)
+        self.animation_callback.on_search_end(value, False)
         return (parent, child_dir, next_try)
 
 
@@ -393,6 +432,43 @@ class BST:
 
         self.animation_callback.node_position_animation(self)
 
+    def remove(self, value)->bool:
+
+        to_delete_node = self.find_node(value, True)
+
+        pdb.set_trace()
+        if not to_delete_node:
+            return False
+
+        changing_root = to_delete_node == self.root
+        in_order_successor = to_delete_node.children_[Dir.RIGHT.value]
+
+        self_dir = None if not to_delete_node.parent_ else Dir.LEFT if to_delete_node== to_delete_node.parent_.children_[Dir.LEFT.value] else Dir.RIGHT
+
+        if in_order_successor :
+            while in_order_successor.children_[Dir.LEFT.value]:
+                in_order_successor = in_order_successor.children_[Dir.LEFT.value]
+
+            to_delete_node.swap(in_order_successor)
+            if changing_root:
+                self.root = in_order_successor
+
+            to_delete_node.disconnect()
+            self.animation_callback.delete_node(to_delete_node)
+            self.animation_callback.node_position_animation(self)
+            return 
+
+        if changing_root:
+            self.root = to_delete_node.children_[Dir.LEFT.value]
+        else:
+            to_delete_node.parent_.set_child(self_dir, to_delete_node.children_[Dir.LEFT.value])
+
+        to_delete_node.disconnect()
+        self.animation_callback.delete_node(to_delete_node)
+        self.animation_callback.node_position_animation(self)
+
+        
+
     def insert(self, value)->bool:
         new_node = self.new_node(value, True)
 
@@ -401,7 +477,7 @@ class BST:
             self.animation_callback.node_position_animation(self)
             return True
 
-        parent,dir,node = self.find_pos(new_node)
+        parent,dir,node = self.find_pos(value)
 
         if node and node.value == value:
             self.animation_callback.on_delete_node(new_node)
@@ -432,12 +508,16 @@ class BSTInsert(Scene):
         ##bst.rotate(1, Dir.LEFT)
         #self.wait(1)
         #return
-        insert_value = [0, -5, 5, -7, -3, 3, 7]
+        insert_value = [0, -5, 5, -7]
+
+
 
         #pdb.set_trace()
         for i in insert_value:
             bst.insert(i)
+        #bst.rotate(bst.find_node(5,False),Dir.LEFT)
 
-        bst.rotate(bst.find_node(5),Dir.LEFT)
+        bst.remove(-5)
         self.wait(1)
+        #self.wait(1)
 
