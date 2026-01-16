@@ -24,6 +24,9 @@ class TreeNode:
         self.children_ = [None, None]
         self.parent_dir_ = [None, None]
 
+    def __repr__(self):
+        return f"{self.value}, parent:{self.parent_.value if self.parent_ else 'none'}  children: [{self.children_[0] if self.children_[0] else 'none' }, {self.children_[1] if self.children_[1] else 'none'}]"
+
     def disconnect(self):
 
         assert self.children_[Dir.LEFT.value] is None or self.children_[Dir.RIGHT.value] is None
@@ -249,6 +252,10 @@ class AnimationCallback:
         pass
 
     def on_search_end(self, value, duplicated_found):
+        pass
+
+
+    def node_position_animation(self, tree):
         pass
 
 class BSTAnimationCallback(AnimationCallback):
