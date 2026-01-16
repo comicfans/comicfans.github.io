@@ -18,12 +18,11 @@ class Dir (Enum):
     RIGHT=1
 
 class TreeNode:
-    def __init__(self, value, parent, tree):
+    def __init__(self, value, parent):
         self.value = value
         self.parent_ = parent 
         self.children_ = [None, None]
         self.parent_dir_ = [None, None]
-        self.tree_ = tree
 
     def set_child(self, dir: Dir, node):
         self.children_[dir.value] = node
@@ -86,13 +85,10 @@ class AniNode:
                          #, color = manim.RED
                          )
         self.text.move_to(self.circle)
-        self.children_edges = []
-        for dir in Dir:
-            line = Line(self.circle.get_bottom(),self.circle.get_bottom())
-            self.children_edges.append(line)
-            self.scene.add(self.children_edges[-1])
+        self.parent_edge = Line(self.circle.get_top(),self.circle.get_top())
+        self.scene.add(self.parent_edge)
         
-        self.group_node = VGroup(self.circle, self.text, *self.children_edges)
+        self.group_node = VGroup(self.circle, self.text, *self.parent_edge)
         self.group_node.move_to(NODE_INIT_POS)
 
     def set_color(self, manim_color, animation : list[Animation]):
@@ -284,36 +280,36 @@ class RealAnimationCallback(AnimationCallback):
         animation = [FadeOut(to_delete_ani.group_node)]
         self.flush_animation(animation)
 
-    def assign_position(self, position_node:LayoutPositionNode, animation:list[Animation],current_depth = 0):
+    def assign_position(self, parent_pos ,position_node:LayoutPositionNode, animation:list[Animation],current_depth = 0):
         if not position_node:
             return
 
 
         children_pos = [None,None]
+        pos = current_depth * manim.DOWN + position_node.merged_range[-1][0] * manim.RIGHT
 
         for dir in Dir:
-            children_pos[dir.value] = self.assign_position(position_node.children[dir.value],animation,
+            children_pos[dir.value] = self.assign_position(pos, position_node.children[dir.value],animation,
                                                            current_depth +1)
         
-        pos = current_depth * manim.DOWN + position_node.merged_range[-1][0] * manim.RIGHT
         ani_node = self.node_for(position_node.tree_node)
         animation.append(ani_node.circle.animate.move_to(pos))
         animation.append(ani_node.text.animate.move_to(pos))
         half = np.array([0, -CIRCLE_RADIUS,0])
-        for dir in Dir:
-            target_pos = pos + half
-            if position_node.children[dir.value]:
-                target_pos = children_pos[dir.value] - half
 
-            assert target_pos is not None
+        target_pos = pos - half
+        if parent_pos is not None:
+            target_pos = parent_pos + half
 
-            from_pos = pos + half
-            if np.all(from_pos == target_pos):
-                # manim error
-                target_pos = target_pos +manim.UP * 0.01
+        assert target_pos is not None
 
-            animation.append(ani_node.children_edges[dir.value].animate.put_start_and_end_on(pos + half,
-                                                                                             target_pos + manim.UP * 0.01))
+        from_pos = pos + half
+        if np.all(from_pos == target_pos):
+            # manim error
+            target_pos = target_pos +manim.UP * 0.01
+
+        animation.append(ani_node.parent_edge.animate.put_start_and_end_on(pos - half,
+                                                                           target_pos + manim.UP * 0.01))
 
         return pos
 
@@ -325,7 +321,7 @@ class RealAnimationCallback(AnimationCallback):
         new_range = position_node.total_range()
 
         animation = []
-        self.assign_position(position_node,animation)
+        self.assign_position(None,position_node,animation)
 
 
         screen_height = max(self_depth,1) * manim.UP[1]
@@ -382,7 +378,7 @@ class BST:
 
 
     def new_node(self, value, with_animation):
-        ret = TreeNode(value, None, self)
+        ret = TreeNode(value, None)
         if with_animation:
             self.animation_callback.on_new_tree_node(ret)
         return ret
