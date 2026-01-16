@@ -25,6 +25,13 @@ class TreeNode:
         self.parent_dir_ = [None, None]
 
     def disconnect(self):
+
+        assert self.children_[Dir.LEFT.value] is None or self.children_[Dir.RIGHT.value] is None
+
+        if self.parent_:
+            self_side = Dir(int(self == self.parent_.children_[Dir.RIGHT.value]))
+            self.parent_.children_[self_side.value] = self.children_[Dir.LEFT.value] if self.children_[Dir.LEFT.value] else self.children_[Dir.RIGHT.value]
+
         self.parent_ = None
         for dir in Dir:
             self.children_[dir.value] = None
@@ -35,23 +42,37 @@ class TreeNode:
             node.parent_ = self
 
     def swap(self, other):
+        pdb.set_trace()
         if self == other:
             return
 
         if other:
             self.children_,other.children_ = other.children_,self.children_
-            other.redirect_children_parent()
-        self.redirect_children_parent()
-        # two node might point to each other, then there'll be self-loop in parent/children
-        # now break them
-        for test in [self, other]:
+            self.parent_,other.parent_ = other.parent_,self.parent_
+
+        to_check = [self, other]
+        for idx, test in enumerate(to_check):
             if not test:
                 continue
+            another = to_check[1-idx]
             if test.parent_ == test:
-                test.parent_ = None
+                test.parent_ = another
+            elif test.parent_:
+                old_side = Dir(int(other == test.parent_.children_[Dir.RIGHT.value]))
+                test.parent_.children_[old_side.value] = test
+
             for dir in Dir:
-                if test.children_[dir.value] == other:
-                    test.children_[dir.value] = None
+                if test.children_[dir.value] == test:
+                    test.children_[dir.value] = another
+
+
+        self.redirect_children_parent()
+        if other:
+            other.redirect_children_parent()
+        # two node might point to each other, then there'll be self-loop in parent/children
+        # now break them
+        
+
         
     def redirect_children_parent(self):
         for dir in Dir:
@@ -436,7 +457,6 @@ class BST:
 
         to_delete_node = self.find_node(value, True)
 
-        pdb.set_trace()
         if not to_delete_node:
             return False
 
@@ -453,8 +473,12 @@ class BST:
             if changing_root:
                 self.root = in_order_successor
 
+
+            self.animation_callback.node_position_animation(self)
+
             to_delete_node.disconnect()
             self.animation_callback.delete_node(to_delete_node)
+
             self.animation_callback.node_position_animation(self)
             return 
 
@@ -508,7 +532,7 @@ class BSTInsert(Scene):
         ##bst.rotate(1, Dir.LEFT)
         #self.wait(1)
         #return
-        insert_value = [0, -5, 5, -7]
+        insert_value = [0, -5, 5,7, -7,3,-3]
 
 
 
@@ -517,7 +541,7 @@ class BSTInsert(Scene):
             bst.insert(i)
         #bst.rotate(bst.find_node(5,False),Dir.LEFT)
 
-        bst.remove(-5)
+        bst.remove(0)
         self.wait(1)
         #self.wait(1)
 
