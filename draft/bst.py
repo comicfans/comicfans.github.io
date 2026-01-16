@@ -18,9 +18,9 @@ class Dir (Enum):
     RIGHT=1
 
 class TreeNode:
-    def __init__(self, value, parent):
+    def __init__(self, value):
         self.value = value
-        self.parent_ = parent 
+        self.parent_ = None
         self.children_ = [None, None]
         self.parent_dir_ = [None, None]
 
@@ -42,7 +42,6 @@ class TreeNode:
             node.parent_ = self
 
     def swap(self, other):
-        pdb.set_trace()
         if self == other:
             return
 
@@ -252,7 +251,7 @@ class AnimationCallback:
     def on_search_end(self, value, duplicated_found):
         pass
 
-class RealAnimationCallback(AnimationCallback):
+class BSTAnimationCallback(AnimationCallback):
 
 
 
@@ -437,11 +436,9 @@ class BST:
 
 
 
-    def new_node(self, value, with_animation):
-        ret = TreeNode(value, None)
-        if with_animation:
-            self.animation_callback.on_new_tree_node(ret)
-        return ret
+    def new_node(self, value):
+        return TreeNode(value)
+
 
     def rotate(self, node, dir:Dir):
 
@@ -494,7 +491,8 @@ class BST:
         
 
     def insert(self, value)->bool:
-        new_node = self.new_node(value, True)
+        new_node = self.new_node(value)
+        self.animation_callback.on_new_tree_node(new_node)
 
         if self.root is None:
             self.root = new_node
@@ -522,7 +520,7 @@ class BST:
 
 class BSTInsert(Scene):
     def construct(self):
-        animation_callback = RealAnimationCallback(self)
+        animation_callback = BSTAnimationCallback(self)
         bst = BST(animation_callback)
         #bst.insert(0)
         #bst.insert(-5)
@@ -536,7 +534,6 @@ class BSTInsert(Scene):
 
 
 
-        #pdb.set_trace()
         for i in insert_value:
             bst.insert(i)
         #bst.rotate(bst.find_node(5,False),Dir.LEFT)

@@ -1,4 +1,4 @@
-from bst import TreeNode,Dir
+from bst import TreeNode,Dir,BST,BSTAnimationCallback
 from enum import Enum
 from typing import Tuple
 import manim
@@ -9,14 +9,21 @@ class Color(Enum):
     RED = 1
 
 class RBNode(TreeNode):
-    def set_color(self, color: Color, animation: list[Animation]):
-        if self.color_ == color:
-            return []
+    def __init__(self,value,parent):
+        super().__init__(value,parent)
+        self.color_ = Color.RED
 
-        self.color_ = color
-        return self.ani_node().set_color(manim.GRAY if color == Color.BLACK else manim.RED, animation)
+class RBTreeAnimationCallback(BSTAnimationCallback):
+    def on_new_tree_node(self, tree_node):
+        super().on_new_tree_node(tree_node)
+        self.node_for(tree_node).circle.set_color(manim.RED)
+        self.node_for(tree_node).text.set_color(manim.RED)
 
-class RBT:
+class RBTree(BST):
+
+    def new_node(self, value)->RBNode:
+        return RBNode(value)
+
 
     def insert(self, value)->bool:
         animation = []
