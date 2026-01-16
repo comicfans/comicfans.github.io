@@ -194,10 +194,26 @@ class LayoutPositionNode:
         merged = LayoutPositionNode.merge_left_right(left_pos, right_pos, root)
         return merged
 
-
-
 class AnimationCallback:
+    def delete_node(self, tree_node,animation :list[Animation]):
+        pass
 
+    def init_callback(self, tree):
+        pass
+
+    def on_new_tree_node(self, tree_node):
+        pass
+
+    def on_search_begin(self, search_node):
+        pass
+
+    def on_search_progress(self, search_node, parent, current):
+        pass
+
+    def on_search_end(self, tree_node, duplicated_found):
+        pass
+
+class RealAnimationCallback(AnimationCallback):
 
 
 
@@ -264,10 +280,9 @@ class AnimationCallback:
         self.flush_animation(self.search_animation)
 
     def on_delete_node(self, tree_node):
-        self.delete_node(self.node_for(tree_node), self.search_animation)
-        self.flush_animation(self.search_animation)
-        self.search_animation.append(FadeOut(tree_node.ani_node().group_node))
-        pass
+        to_delete_ani = self.node_for(tree_node)
+        animation = [FadeOut(to_delete_ani.group_node)]
+        self.flush_animation(animation)
 
     def assign_position(self, position_node:LayoutPositionNode, animation:list[Animation],current_depth = 0):
         if not position_node:
@@ -325,6 +340,8 @@ class AnimationCallback:
 
         self.flush_animation(animation)
 
+class DummyAnimationCallback(AnimationCallback):
+    pass
 
 class BST:
 
@@ -333,6 +350,13 @@ class BST:
         self.animation_callback = animation_callback
         self.animation_callback.init_callback(self)
 
+    def find_node(self, value)->TreeNode:
+        temp_node = self.new_node(value, with_animation = False)
+        temp = self.animation_callback
+        self.animation_callback = DummyAnimationCallback()
+        ret = self.find_pos(temp_node)[2]
+        self.animation_callback = temp
+        return ret
 
     def find_pos(self, search_node)-> Tuple[TreeNode, dir, TreeNode]:
         parent = None
@@ -357,9 +381,10 @@ class BST:
 
 
 
-    def new_node(self, value):
+    def new_node(self, value, with_animation):
         ret = TreeNode(value, None, self)
-        self.animation_callback.on_new_tree_node(ret)
+        if with_animation:
+            self.animation_callback.on_new_tree_node(ret)
         return ret
 
     def rotate(self, node, dir:Dir):
@@ -373,7 +398,7 @@ class BST:
         self.animation_callback.node_position_animation(self)
 
     def insert(self, value)->bool:
-        new_node = self.new_node(value)
+        new_node = self.new_node(value, True)
 
         if self.root is None:
             self.root = new_node
@@ -383,6 +408,7 @@ class BST:
         parent,dir,node = self.find_pos(new_node)
 
         if node and node.value == value:
+            self.animation_callback.on_delete_node(new_node)
             return False
 
         parent.set_child(dir, new_node)
@@ -400,7 +426,7 @@ class BST:
 
 class BSTInsert(Scene):
     def construct(self):
-        animation_callback = AnimationCallback(self)
+        animation_callback = RealAnimationCallback(self)
         bst = BST(animation_callback)
         #bst.insert(0)
         #bst.insert(-5)
@@ -416,6 +442,6 @@ class BSTInsert(Scene):
         for i in insert_value:
             bst.insert(i)
 
-        #bst.rotate(bst.find_pos(0)[2],Dir.LEFT)
-        #self.wait(1)
+        bst.rotate(bst.find_node(5),Dir.LEFT)
+        self.wait(1)
 
