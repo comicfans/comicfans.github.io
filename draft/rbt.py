@@ -2,22 +2,38 @@ from bst import TreeNode,Dir,BST,BSTAnimationCallback
 from enum import Enum
 from typing import Tuple
 import manim
-from manim import Animation,Scene,AniContext
+from manim import Animation,Scene
 
 class Color(Enum):
     BLACK = 0
     RED = 1
 
 class RBNode(TreeNode):
-    def __init__(self,value,parent):
-        super().__init__(value,parent)
+    def __init__(self,value):
+        super().__init__(value)
         self.color_ = Color.RED
 
 class RBTreeAnimationCallback(BSTAnimationCallback):
     def on_new_tree_node(self, tree_node):
         super().on_new_tree_node(tree_node)
         self.node_for(tree_node).circle.set_color(manim.RED)
-        self.node_for(tree_node).text.set_color(manim.RED)
+
+    def node_position_animation(self, tree):
+        super().node_position_animation(tree)
+
+        animation = []
+        def rec_color(tree_node):
+            if not tree_node:
+                return
+            animation.append(self.node_for(tree_node).circle.animate.set_color(manim.RED if tree_node.color_ == Color.RED else manim.DARK_GRAY))
+            rec_color(tree_node.children_[Dir.LEFT.value])
+            rec_color(tree_node.children_[Dir.RIGHT.value])
+
+        rec_color(tree.root)
+        self.flush_animation(animation)
+
+
+    
 
 class RBTree(BST):
 
@@ -26,38 +42,32 @@ class RBTree(BST):
 
 
     def insert(self, value)->bool:
-        animation = []
 
-        new_node = Node(value, None, self, animation)
+        ret = super().insert(value)
 
-        self.flush_animation(animation)
+        if not ret :
+            return ret
 
-        if self.root is None:
-            self.root = new_node
-            self.node_position_animation(animation)
-            return True
 
-        parent,dir,node = self.find_pos(self.root, value)
-        if parent.children_[dir.value]:
-            # we found duplicated value
-            return False
-
-        parent.set_child(dir, new_node, animation)
-        self.node_position_animation(animation)
+        new_node = self.find_node(value, with_animation=False)
 
         while new_node:
             assert new_node.color_ == Color.RED
+
+            if new_node == self.root:
+                self.animation_callback.node_position_animation(self)
+                return ret
+
 
             parent = new_node.parent_
             assert parent
 
             if parent.color_ == Color.BLACK:
-                self.flush_animation(animation)
                 return True
 
             if parent == self.root:
-                parent.set_color(Color.BLACK, animation)
-                self.flush_animation(animation)
+                parent.color_ = Color.BLACK
+                self.animation_callback.node_position_animation(self)
                 return True
             # double red and have grandparent
             grandparent = parent.parent_
@@ -77,33 +87,33 @@ class RBTree(BST):
                 #   
                 #   
 
-                new_sub_root = grandparent.rotate(Dir(1 - parent_dir.value), animation)
+                new_sub_root = grandparent.rotate(Dir(1 - parent_dir.value))
+                #self.animation_callback.node_position_animation(self)
                 # recolor G and P
-                grandparent.set_color(Color.RED,animation)
-                parent.set_color(Color.BLACK,animation)
+                grandparent.color_ = Color.RED
+                parent.color_ = Color.BLACK
 
                 if grandparent_is_root:
                     self.root = new_sub_root
 
-                self.node_position_animation(animation)
+                self.animation_callback.node_position_animation(self)
                 return True
 
             # has uncle
-            if uncle.color == Color.BLACK:
+            if uncle.color_ == Color.BLACK:
                 #    G(B)                P(B)
                 #   /    \               /   \
                 #  P(R)   U(B)   =>    L(R)  G(R)
                 #  /  \    /  \               /   \
                 #L(R) S(B) .  .. ..         S(B)   U(B)
-                grandparent.rotate(Dir(1 - parent_dir),animation)
-                grandparent.set_color(Color.RED,animation)
-                parent.set_color(Color.BLACK,animation)
+                new_sub_root = grandparent.rotate(Dir(1 - parent_dir.value))
+                grandparent.color_ = Color.RED
+                parent.color_ = Color.BLACK
 
                 if grandparent_is_root:
                     self.root = new_sub_root
 
-                self.flush_animation(animation)
-                self.node_position_animation()
+                self.animation_callback.node_position_animation(self)
                 return True
             # uncle is red
             #             G(B)
@@ -113,20 +123,20 @@ class RBTree(BST):
             #        L(R)
             #
             #
-            grandparent.set_color(Color.RED,animation)
-            parent.set_color(Color.BLACK,animation)
-            uncle.set_color(Color.BLACK,animation)
+            grandparent.color_ = Color.RED
+            parent.color_ = Color.BLACK
+            uncle.color_ = Color.BLACK
             new_node = grandparent
+            self.animation_callback.node_position_animation(self)
 
         assert False
 
 class RbtInsert1(Scene):
     def construct(self):
-        ani_context = AniContext(self)
-        rbt = RBT(ani_context)
-        rbt.insert(0)
-        #pdb.set_trace()
-        rbt.insert(1)
-        #pdb.set_trace()
-        rbt.insert(2)
+        callback = RBTreeAnimationCallback(self)
+        rbt = RBTree(callback)
+
+        for i in range(10):
+            rbt.insert(i)
+        self.wait(1)
 
