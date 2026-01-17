@@ -74,6 +74,14 @@ class TreeNode:
         # two node might point to each other, then there'll be self-loop in parent/children
         # now break them
         
+    def in_order_successor(self):
+        ret = self.children_[Dir.RIGHT.value]
+        while ret and ret.children_[Dir.LEFT.value]:
+            ret = ret.children_[Dir.LEFT.value]
+
+        return ret
+
+
 
         
     def redirect_children_parent(self):
@@ -97,14 +105,12 @@ class TreeNode:
         self_dir = Dir(int(self == parent.children_[Dir.RIGHT.value])) if parent else None
         move_nephew = to_move_up.children_[dir.value]
 
-        self.parent_ = to_move_up
-        to_move_up.children_[dir.value] = self
-        to_move_up.parent_ = parent
+        to_move_up.set_child(dir, self)
 
-        self.children_[1-dir.value] = move_nephew
-
+        self.set_child(Dir(1-dir.value), move_nephew)
+        
         if parent:
-            parent.children_[self_dir.value] = to_move_up
+            parent.set_child(self_dir, to_move_up)
 
         return to_move_up
 
@@ -447,7 +453,7 @@ class BST:
         return TreeNode(value)
 
 
-    def rotate(self, node, dir:Dir):
+    def rotate(self, node, dir:Dir)->TreeNode:
 
         node_is_root = (node == self.root)
         new_root = node.rotate(dir)
@@ -455,7 +461,10 @@ class BST:
         if node_is_root:
             self.root = new_root
 
+        self.check(self.root)
         self.animation_callback.node_position_animation(self)
+        return new_root
+
 
     def remove(self, value)->bool:
 
@@ -465,14 +474,11 @@ class BST:
             return False
 
         changing_root = to_delete_node == self.root
-        in_order_successor = to_delete_node.children_[Dir.RIGHT.value]
+        in_order_successor = to_delete_node.in_order_successor()
 
         self_dir = None if not to_delete_node.parent_ else Dir.LEFT if to_delete_node== to_delete_node.parent_.children_[Dir.LEFT.value] else Dir.RIGHT
 
         if in_order_successor :
-            while in_order_successor.children_[Dir.LEFT.value]:
-                in_order_successor = in_order_successor.children_[Dir.LEFT.value]
-
             to_delete_node.swap(in_order_successor)
             if changing_root:
                 self.root = in_order_successor
@@ -484,7 +490,7 @@ class BST:
             self.animation_callback.delete_node(to_delete_node)
 
             self.animation_callback.node_position_animation(self)
-            return 
+            return True
 
         if changing_root:
             self.root = to_delete_node.children_[Dir.LEFT.value]
@@ -523,6 +529,19 @@ class BST:
         
         return 1+max(BST.depth(node.children_[Dir.LEFT.value]),
                      BST.depth(node.children_[Dir.RIGHT.value]))
+
+    def check(self, root_node):
+        if not root_node:
+            return
+        
+        for dir in Dir:
+            child = root_node.children_[dir.value]
+            if not child:
+                continue
+
+            assert root_node == child.parent_
+            self.check(child)
+
 
 
 class BSTInsert(Scene):
