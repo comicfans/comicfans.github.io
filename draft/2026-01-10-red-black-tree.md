@@ -305,6 +305,7 @@ so  3.1 not applied anymore
     L(B)   S(B)               ===>         L(B)     S(turned to RED)
     /\      /  \                           / \      /  \
    ......  N1(B) N2(B)                    ...     N1(B) N2(B)
+  (note: N1 and N2 must be black, since any red nephew condition is handled by 3.4~3.6)
   we turn it into balanced valid RB-Tree, also pushing 'black height decrease 1' condition upwards
 
 now all condition in deletion being discussed ( some simplest condition omitted, like insert/delete as root), I hope

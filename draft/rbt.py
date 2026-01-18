@@ -16,6 +16,13 @@ class RBNode(TreeNode):
         super().__init__(value)
         self.color_ = Color.RED
 
+    def swap(self, to_swap):
+        super().swap(to_swap)
+        self.color_, to_swap.color_ = to_swap.color_, self.color_
+
+    def __repr__(self):
+        return super().__repr__() + str(self.color_)
+
 class RBTreeAnimationCallback(BSTAnimationCallback):
     def on_new_tree_node(self, tree_node):
         super().on_new_tree_node(tree_node)
@@ -43,43 +50,105 @@ class RBTree(BST):
     def new_node(self, value)->RBNode:
         return RBNode(value)
 
+    def remove_fix(self, lowest_node, lowest_dir)->RBNode:
+        if lowest_node == self.root:
+            return None
+
+        assert lowest_node.color_ == Color.BLACK
+
+        parent = lowest_node.parent_
+        assert parent
+
+        sibling = parent.children_[1 - lowest_dir.value]
+        # we're dealing with black height decrease1, so sibling branch always 
+        # have at least one black node (that is , sibling must exist)
+        assert sibling
+
+        nephew_is_black = [sibling.children_[dir.value] is None or sibling.children_[dir.value].color_ == Color.BLACK for dir in Dir]
+
+        if not nephew_is_black[Dir.LEFT.value] or not nephew_is_black[Dir.RIGHT.value]: 
+            # at least one nephew is red, or both red
+            near_nephew_is_red = not nephew_is_black[lowest_dir.value]
+
+            assert sibling.color_ == Color.BLACK
+            if near_nephew_is_red:
+                new_sibling = self.rotate(sibling, Dir(1 - lowest_dir.value))
+                new_sibling.color_ = Color.BLACK
+                sibling.color_ = Color.RED
+                sibling = new_sibling
+
+            self.rotate(parent, lowest_dir)
+            sibling.color_ = parent.color_
+            parent.color_ = Color.BLACK
+            return None
+            
+
+        #both nephews are black
+
+        if parent.color_ == Color.RED:
+            assert sibling.color_ == Color.BLACK
+            # using parent red to rebalance
+
+            parent.color_ = Color.BLACK
+            # this is safe since both nephews are black
+            sibling.color_ = Color.RED
+            return None
+
+        assert parent.color_ == Color.BLACK
+        # and both nephews are black
+
+        if sibling.color_ == Color.RED:
+            # use sibling red to rebalance
+            self.rotate(parent, lowest_dir)
+            sibling.color_ = Color.BLACK
+            return None
+
+        #sibling, parent, nephew all black, push black height-1 upwards
+        sibling.color_ = Color.RED
+        return parent
+
+
     def remove(self, value)->bool:
         to_delete_node = self.find_node(value, False)
 
         if not to_delete_node:
             return False
 
-        in_order_successor = to_delete_node.in_order_successor()
+        fill_before_remove = {}
 
-        two_children = [None,None]
-        if in_order_successor:
-            in_order_successor.color_, to_delete_node.color_ = to_delete_node.color_ ,in_order_successor.color_
-            two_children = in_order_successor.children_
+        super().remove(value, fill_before_remove)
 
-
-        super().remove(value)
+        to_delete_node.parent_ = fill_before_remove['parent']
+        to_delete_node.children_[Dir.RIGHT.value] = fill_before_remove["right_child"]
 
         if self.root is None:
+            self.check(True,True)
             return True
 
         if to_delete_node.color_ == Color.RED:
+            self.check(True,True)
             return True
 
+        assert to_delete_node.color_ == Color.BLACK
         # deleting black, find if we can use sparse red node to complete it
-        lowest = to_delete_node
+       
+        # here we're first iteration
+        if to_delete_node.children_[Dir.RIGHT.value]:
+            # the only condition that we might use child red to rebalance
+            assert to_delete_node.children_[Dir.RIGHT.value].color_ == Color.RED
+            to_delete_node.children_[Dir.RIGHT.value].color_ = Color.BLACK
+            self.animation_callback.node_position_animation(self)
+            self.check(True,True)
+            return True
 
-        first_iteration = True
-        while lowest != self.root:
+        while to_delete_node:
+            to_delete_node = self.remove_fix(to_delete_node, fill_before_remove['self_dir'])
+            self.check()
+            self.animation_callback.node_position_animation(self)
 
-            assert lowest.color_ == Color.BLACK
-
-            if first_iteration and two_children[Dir.Right.value]:
-                assert two_children[Dir.RIGHT.value].color_ == Color.RED
-                two_children[Dir.RIGHT.value].color_ = Color.BLACK
-                self.animation_callback.node_position_animation(self)
-                return True
-
-                
+        self.animation_callback.node_position_animation(self)
+        self.check(True,True)
+        return True
 
     def insert_fix(self, new_node)->RBNode:
         assert new_node.color_ == Color.RED
@@ -122,7 +191,6 @@ class RBTree(BST):
 
 
             new_sub_root = self.rotate(grandparent, Dir(1 - parent_dir.value))
-            self.check(self.root, False)
             # recolor G and P
             grandparent.color_ = Color.RED
             new_sub_root.color_ = Color.BLACK
@@ -185,38 +253,85 @@ class RBTree(BST):
             to_fix_node = self.insert_fix(to_fix_node)
             self.animation_callback.node_position_animation(self)
 
-        self.check(self.root, True)
+        self.check(True)
 
         return True
 
-    def check(self,root_node, check_color= False):
-        super().check(root_node)
-        if not root_node:
-            return
+    def check(self, check_color= False, check_height = False):
+        super().check()
         
-        for dir in Dir:
-            child = root_node.children_[dir.value]
-            if not child:
-                continue
+        def do_check(root_node):
 
-            if root_node != child.parent_:
-                pdb.set_trace()
-            if check_color:
-                assert not (root_node.color_  == Color.RED and child.color_ == Color.RED)
+            if not root_node:
+                return 0
+
+            black_height = [0,0]
+
+            for dir in Dir:
+                child = root_node.children_[dir.value]
+                if not child:
+                    continue
+
+                assert root_node == child.parent_
+                if check_color:
+                    assert not (root_node.color_  == Color.RED and child.color_ == Color.RED)
+                black_height[dir.value] = do_check(child)
+
+            if check_height:
+                assert black_height[0] == black_height[1]
+            return black_height[0] + int(root_node.color_ == Color.BLACK)
+
+        do_check(self.root)
 
 
 
 class RbtInsert1(Scene):
     def construct(self):
         callback = RBTreeAnimationCallback(self)
-        #callback = AnimationCallback()
+        callback = AnimationCallback()
         rbt = RBTree(callback)
 
+        #rand_data = [0,5,3]
         rand_data = list(range(20))
+        random.seed(0)
         random.shuffle(rand_data)
-        rand_data =  [7,2,10,16,15,3,19,14,17,18,11]
-        #rand_data = [0,7,3]
+        print(random)
+        return
         for i in rand_data:
             rbt.insert(i)
-        self.wait(1)
 
+        random.shuffle(rand_data)
+        for i in rand_data:
+            rbt.remove(i)
+
+        #rand_data = list(range(20))
+        #random.shuffle(rand_data)
+        #for i in rand_data:
+        #    rbt.insert(i)
+        #self.wait(1)
+
+def test_case0():
+    input = [10, 18, 16, 14, 0, 17, 11, 2, 3, 9]
+
+    callback = AnimationCallback()
+    rbt = RBTree(callback)
+    for i in input:
+        rbt.insert(i)
+
+def test_case1():
+    rand_data = list(range(20))
+    random.seed(0)
+    random.shuffle(rand_data)
+
+    callback = AnimationCallback()
+    rbt = RBTree(callback)
+    for i in rand_data:
+        rbt.insert(i)
+
+    random.shuffle(rand_data)
+    for i in rand_data:
+        if i == 0:
+            pdb.set_trace()
+        rbt.remove(i)
+
+test_case1()

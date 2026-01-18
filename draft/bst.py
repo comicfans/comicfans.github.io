@@ -25,7 +25,7 @@ class TreeNode:
         self.parent_dir_ = [None, None]
 
     def __repr__(self):
-        return f"{self.value}, parent:{self.parent_.value if self.parent_ else 'none'}  children: [{self.children_[0] if self.children_[0] else 'none' }, {self.children_[1] if self.children_[1] else 'none'}]"
+        return f"{self.value}, parent:{self.parent_.value if self.parent_ else 'none'}  children: [{self.children_[0].value if self.children_[0] else 'none' }, {self.children_[1].value if self.children_[1] else 'none'}]"
 
     def disconnect(self):
 
@@ -35,32 +35,32 @@ class TreeNode:
             self_side = Dir(int(self == self.parent_.children_[Dir.RIGHT.value]))
             self.parent_.children_[self_side.value] = self.children_[Dir.LEFT.value] if self.children_[Dir.LEFT.value] else self.children_[Dir.RIGHT.value]
 
-        self.parent_ = None
         for dir in Dir:
             self.children_[dir.value] = None
+
+        # here we leave parent for easier RBTree traceback
+        self.parent_ = None
 
     def set_child(self, dir: Dir, node):
         self.children_[dir.value] = node
         if node:
             node.parent_ = self
 
-    def swap(self, other):
-        if self == other:
-            return
+    def swap(self, to_swap):
 
-        if other:
-            self.children_,other.children_ = other.children_,self.children_
-            self.parent_,other.parent_ = other.parent_,self.parent_
+        assert to_swap
+        assert self != to_swap
 
-        to_check = [self, other]
+        self.children_,to_swap.children_ = to_swap.children_,self.children_
+        self.parent_,to_swap.parent_ = to_swap.parent_,self.parent_
+
+        to_check = [self, to_swap]
         for idx, test in enumerate(to_check):
-            if not test:
-                continue
             another = to_check[1-idx]
             if test.parent_ == test:
                 test.parent_ = another
             elif test.parent_:
-                old_side = Dir(int(other == test.parent_.children_[Dir.RIGHT.value]))
+                old_side = Dir(int(another== test.parent_.children_[Dir.RIGHT.value]))
                 test.parent_.children_[old_side.value] = test
 
             for dir in Dir:
@@ -69,8 +69,7 @@ class TreeNode:
 
 
         self.redirect_children_parent()
-        if other:
-            other.redirect_children_parent()
+        to_swap.redirect_children_parent()
         # two node might point to each other, then there'll be self-loop in parent/children
         # now break them
         
@@ -111,6 +110,8 @@ class TreeNode:
         
         if parent:
             parent.set_child(self_dir, to_move_up)
+        else:
+            to_move_up.parent_ = None
 
         return to_move_up
 
@@ -242,7 +243,7 @@ class LayoutPositionNode:
         return merged
 
 class AnimationCallback:
-    def delete_node(self):
+    def delete_node(self,tree_node):
         pass
 
     def init_callback(self, tree):
@@ -461,12 +462,12 @@ class BST:
         if node_is_root:
             self.root = new_root
 
-        self.check(self.root)
+        self.check()
         self.animation_callback.node_position_animation(self)
         return new_root
 
 
-    def remove(self, value)->bool:
+    def remove(self, value, fill_before_remove = {})->bool:
 
         to_delete_node = self.find_node(value, True)
 
@@ -478,6 +479,13 @@ class BST:
 
         self_dir = None if not to_delete_node.parent_ else Dir.LEFT if to_delete_node== to_delete_node.parent_.children_[Dir.LEFT.value] else Dir.RIGHT
 
+        def fill_info(to_delete_node):
+            fill_before_remove['parent'] = None if to_delete_node.parent_ is None else to_delete_node.parent_
+            fill_before_remove['right_child'] = to_delete_node.children_[Dir.RIGHT.value]
+            fill_before_remove['self_dir'] = None if to_delete_node.parent_ is None else Dir.LEFT if to_delete_node== to_delete_node.parent_.children_[Dir.LEFT.value] else Dir.RIGHT
+
+        fill_info(to_delete_node)
+
         if in_order_successor :
             to_delete_node.swap(in_order_successor)
             if changing_root:
@@ -486,10 +494,13 @@ class BST:
 
             self.animation_callback.node_position_animation(self)
 
+            fill_info(to_delete_node)
+
             to_delete_node.disconnect()
             self.animation_callback.delete_node(to_delete_node)
 
             self.animation_callback.node_position_animation(self)
+            self.check()
             return True
 
         if changing_root:
@@ -500,7 +511,7 @@ class BST:
         to_delete_node.disconnect()
         self.animation_callback.delete_node(to_delete_node)
         self.animation_callback.node_position_animation(self)
-
+        self.check()
         
 
     def insert(self, value)->bool:
@@ -530,17 +541,29 @@ class BST:
         return 1+max(BST.depth(node.children_[Dir.LEFT.value]),
                      BST.depth(node.children_[Dir.RIGHT.value]))
 
-    def check(self, root_node):
-        if not root_node:
-            return
-        
-        for dir in Dir:
-            child = root_node.children_[dir.value]
-            if not child:
-                continue
+    def check(self):
 
-            assert root_node == child.parent_
-            self.check(child)
+        if self.root:
+            assert self.root.parent_ is None
+
+        walked = set()
+        def do_check(root_node):
+            if not root_node:
+                return
+
+            assert root_node not in walked
+            walked.add(root_node)
+            
+            for dir in Dir:
+                child = root_node.children_[dir.value]
+                if not child:
+                    continue
+
+                assert root_node == child.parent_
+                do_check(child)
+        do_check(self.root)
+
+    
 
 
 
