@@ -240,10 +240,13 @@ so problem resolved locally
 3.3 use sibling red to restore black height (so parent must be black)
          P (BLACK)                                       S(BLACK)
         /       \                                     /             \
-    D(BLACK)    S(RED)                 =====>     P(BLACK)        N2(BLACK)
-                 /   \                                \  
-           N1(BLACK)  N2(BLACK)                       N1(RED)
+    D(BLACK)    S(RED)                 =====>     P(RED)        N2(BLACK)
+                 /   \                            /   \  
+           N1(BLACK)  N2(BLACK)            D(BLACK)   N1(BLACK)
 N1/N2 must exist because equal black height rule
+
+    this is not re-balanced, but now it turned to be same situation as 3.2, 
+    or one of 3.4~3.6
 
 3.4 the only nephew is red and far away(so sibling must be BLACK)
 
@@ -308,8 +311,19 @@ so  3.1 not applied anymore
   (note: N1 and N2 must be black, since any red nephew condition is handled by 3.4~3.6)
   we turn it into balanced valid RB-Tree, also pushing 'black height decrease 1' condition upwards
 
-now all condition in deletion being discussed ( some simplest condition omitted, like insert/delete as root), I hope
-this blog can help you understanding RB-Tree
+now all condition in deletion being discussed, some simplest condition omitted, like insert/delete as root.
+and to achieve sub-tree rebalance, there can be different transform applied, let's say
+
+             P(R)                                          S(B)                         S(R)
+            /   \                                         /   \                         /  \
+         L(B)   S(B)    can be transformed to           P(R)   N2(R)  , or also      P(B)   N2(B)
+         /     /   \                                    /  \     \                   /  \      \
+             N1(B)  N2(R)                           L(B)  N1(B)  ...               L(B)  N1(B)  ...
+                     \
+both transform are valid,  but 2 is preferred, because P turned to BLACK, also allow N1 with red color to be attached
+which can help simplifying the code
+
+I hope this blog can help you understanding RB-Tree
 
 
 I encourage readers to implement it themself. Personally I can't 

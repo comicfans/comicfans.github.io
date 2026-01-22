@@ -33,12 +33,11 @@ class TreeNode:
 
         if self.parent_:
             self_side = Dir(int(self == self.parent_.children_[Dir.RIGHT.value]))
-            self.parent_.children_[self_side.value] = self.children_[Dir.LEFT.value] if self.children_[Dir.LEFT.value] else self.children_[Dir.RIGHT.value]
+            self.parent_.set_child(self_side, self.children_[Dir.LEFT.value] or self.children_[Dir.RIGHT.value])
 
         for dir in Dir:
             self.children_[dir.value] = None
 
-        # here we leave parent for easier RBTree traceback
         self.parent_ = None
 
     def set_child(self, dir: Dir, node):
@@ -504,10 +503,7 @@ class BST:
             return True
 
         if changing_root:
-            self.root = to_delete_node.children_[Dir.LEFT.value]
-        else:
-            to_delete_node.parent_.set_child(self_dir, to_delete_node.children_[Dir.LEFT.value])
-
+            self.root = in_order_successor
         to_delete_node.disconnect()
         self.animation_callback.delete_node(to_delete_node)
         self.animation_callback.node_position_animation(self)
