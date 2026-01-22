@@ -3,11 +3,12 @@
 
 People say that "If I can't coding it, then I don't understand it", so I spend some days to implement the red-black tree. 
 Most people feel confusing when learning the rules of RB-tree insertion and deletion first time just like me,
-I hope this blog can helping you understand it better.
+I hope this blog can help you understand it better.
 
 
-Let's revise binary search tree (BST) first, some confusion explanation in RB-tree actually came from the convention in BST
-the property of binary search tree:
+Let's revise binary search tree (BST) first, some confusion explanation in RB-tree actually came from the convention in BST.
+
+BST properties:
 
 1. parent node value is greater than any node of left-child sub-tree, and less than any node of right-child sub-tree
 2. the in-order successor element of a node, is the left-most node of right-child sub-tree, in-order predecessor is the right-most node of left-child sub-tree
