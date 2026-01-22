@@ -14,12 +14,12 @@ the property of binary search tree:
 3. new inserted node (new unique value), will always insert as leaf node, say, replace a null child, it will never 'replace' any existing node, or being the third child of some node
 
 
-![image]({{ site.baseurl }}/images/2026-01-10-wtf-red-black-tree/BstInsert.gif)
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/BstInsert.gif)
 
 
 4. most important rule (to help understanding RB-tree deletion): when remove a value, it never remove the node directly, we always swap it with in-order successor (or predecessor), then we remove the replaced node
 
-![image]({{ site.baseurl }}/images/2026-01-10-wtf-red-black-tree/BstRemove.gif)
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/BstRemove.gif)
 
 And the in-order successor is the left-most node, so either it has only one right child, or no children at all (otherwise it still has more-left child)
 
@@ -28,11 +28,11 @@ And the in-order successor is the left-most node, so either it has only one righ
    (this is called rotation, I find plot easier to understand than text description myself)
 
 example: rotate at leaf node
-![image]({{ site.baseurl }}/images/2026-01-10-wtf-red-black-tree/BstRotate.gif)
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/BstRotate.gif)
 
 example: rotate with sub-trees
 
-![image]({{ site.baseurl }}/images/2026-01-10-wtf-red-black-tree/BstRotateTree.gif)
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/BstRotateTree.gif)
 such rotation always exist since it's binary search tree, the inner child sub-tree values, will always be in range of parent and grandparent
 by attaching inner child sub-tree to old-grandparent, it's still between old-parent and old-grandparent
 
