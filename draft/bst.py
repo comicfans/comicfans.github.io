@@ -1,4 +1,5 @@
 from manim import Circle,Text,VGroup,Line,always_redraw,Animation,Scene,Create,Rectangle,FadeOut
+import random
 from manim.typing import Point3D
 from copy import deepcopy
 from dataclasses import dataclass
@@ -34,6 +35,10 @@ class TreeNode:
         if self.parent_:
             self_side = Dir(int(self == self.parent_.children_[Dir.RIGHT.value]))
             self.parent_.set_child(self_side, self.children_[Dir.LEFT.value] or self.children_[Dir.RIGHT.value])
+        else:
+            for dir in Dir:
+                if self.children_[dir.value]:
+                    self.children_[dir.value].parent_ = None
 
         for dir in Dir:
             self.children_[dir.value] = None
@@ -267,7 +272,6 @@ class AnimationCallback:
 class BSTAnimationCallback(AnimationCallback):
 
 
-
     def node_for(self, tree_node: Any):
         return self.node_map[tree_node]
 
@@ -289,14 +293,21 @@ class BSTAnimationCallback(AnimationCallback):
     def __init__(self, scene: Scene):
         self.scene = scene
         self.node_map = {}
+        self.enabled = True
 
     def init_callback(self, tree):
         self.rect = Rectangle(width = 1, height = 1)
         self.scene.add(self.rect)
 
     def flush_animation(self, animation:list[Animation], run_time = ANIMATION_RUNTIME, wait_after_run = 0.1):
+
         if not len(animation):
             return
+
+        if not self.enabled:
+            animation.clear()
+            return
+
         self.scene.play(*animation, run_time = run_time)
         self.scene.wait(wait_after_run)
         animation.clear()
@@ -502,8 +513,9 @@ class BST:
             self.check()
             return True
 
+        # no in-order successor, root is left child
         if changing_root:
-            self.root = in_order_successor
+            self.root = to_delete_node.children_[Dir.LEFT.value]
         to_delete_node.disconnect()
         self.animation_callback.delete_node(to_delete_node)
         self.animation_callback.node_position_animation(self)
@@ -563,27 +575,46 @@ class BST:
 
 
 
-class BSTInsert(Scene):
+class BstInsert(Scene):
     def construct(self):
         animation_callback = BSTAnimationCallback(self)
         bst = BST(animation_callback)
-        #bst.insert(0)
-        #bst.insert(-5)
-        #bst.insert(5)
-        #bst.insert(-3)
-        #bst.insert(3)
-        ##bst.rotate(1, Dir.LEFT)
-        #self.wait(1)
-        #return
-        insert_value = [0, -5, 5,7, -7,3,-3]
 
-
-
-        for i in insert_value:
+        for i in [3,1,0,2,5,4,6]:
             bst.insert(i)
-        #bst.rotate(bst.find_node(5,False),Dir.LEFT)
 
-        bst.remove(0)
         self.wait(1)
-        #self.wait(1)
+
+class BSTRemove(Scene):
+    def construct(self):
+        animation_callback = BSTAnimationCallback(self)
+
+        animation_callback.enabled = False
+        bst = BST(animation_callback)
+
+        data = [3,1,0,2,5,4,6]
+        for i in data:
+            bst.insert(i)
+
+
+
+        animation_callback.enabled = True
+        animation_callback.node_position_animation(bst)
+
+        for i in [3,4,5,6,1,2,0]:
+            bst.remove(i)
+
+        self.wait(1)
+
+
+class BstBad(Scene):
+    def construct(self):
+        animation_callback = BSTAnimationCallback(self)
+        bst = BST(animation_callback)
+
+        for i in range(7):
+            bst.insert(i)
+
+        self.wait(1)
+
 
