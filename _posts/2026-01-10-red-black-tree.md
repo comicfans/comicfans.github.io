@@ -12,12 +12,29 @@ the property of binary search tree:
 1. parent node value is greater than any node of left-child sub-tree, and less than any node of right-child sub-tree
 2. the in-order successor element of a node, is the left-most node of right-child sub-tree, in-order predecessor is the right-most node of left-child sub-tree
 3. new inserted node (new unique value), will always insert as leaf node, say, replace a null child, it will never 'replace' any existing node, or being the third child of some node
+
+
+![image]({{ site.baseurl }}/images/2026-01-10-wtf-red-black-tree/BstInsert.gif)
+
+
 4. most important rule (to help understanding RB-tree deletion): when remove a value, it never remove the node directly, we always swap it with in-order successor (or predecessor), then we remove the replaced node
-5. you can use child as the new ROOT to construct new valid BST with only a few pointer adjustment in-between parent,sibling and nephew, no need to dive into whole sub-tree,
+
+![image]({{ site.baseurl }}/images/2026-01-10-wtf-red-black-tree/BstRemove.gif)
+
+And the in-order successor is the left-most node, so either it has only one right child, or no children at all (otherwise it still has more-left child)
+
+
+5. you can use child as the new ROOT to construct new valid BST by only a few pointer adjustment in-between parent,sibling and nephew, no need to dive into whole sub-tree,
    (this is called rotation, I find plot easier to understand than text description myself)
 
-    graph here
+example: rotate at leaf node
+![image]({{ site.baseurl }}/images/2026-01-10-wtf-red-black-tree/BstRotate.gif)
 
+example: rotate with sub-trees
+
+![image]({{ site.baseurl }}/images/2026-01-10-wtf-red-black-tree/BstRotateTree.gif)
+such rotation always exist since it's binary search tree, the inner child sub-tree values, will always be in range of parent and grandparent
+by attaching inner child sub-tree to old-grandparent, it's still between old-parent and old-grandparent
 
 
 Now let's get into RB-tree. Most references and blogs focus on precise definition and operation rules,

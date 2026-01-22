@@ -309,8 +309,12 @@ class BSTAnimationCallback(AnimationCallback):
             return
 
         self.scene.play(*animation, run_time = run_time)
-        self.scene.wait(wait_after_run)
+        self.wait(wait_after_run)
         animation.clear()
+
+    def wait(self, wait_after_run = 0.1):
+        self.scene.wait(wait_after_run)
+
 
     def on_new_tree_node(self, tree_node):
 
@@ -503,6 +507,7 @@ class BST:
 
 
             self.animation_callback.node_position_animation(self)
+            self.animation_callback.wait(0.2)
 
             fill_info(to_delete_node)
 
@@ -585,7 +590,7 @@ class BstInsert(Scene):
 
         self.wait(1)
 
-class BSTRemove(Scene):
+class BstRemove(Scene):
     def construct(self):
         animation_callback = BSTAnimationCallback(self)
 
@@ -612,9 +617,56 @@ class BstBad(Scene):
         animation_callback = BSTAnimationCallback(self)
         bst = BST(animation_callback)
 
-        for i in range(7):
+        for i in range(4):
             bst.insert(i)
 
         self.wait(1)
 
 
+class BstRotate(Scene):
+    def construct(self):
+        animation_callback = BSTAnimationCallback(self)
+        animation_callback.enabled = False
+        bst = BST(animation_callback)
+
+        for i in [1,0,2]:
+            bst.insert(i)
+
+        animation_callback.enabled = True
+        animation_callback.node_position_animation(bst)
+
+        bst.rotate(bst.root, Dir.LEFT)
+        self.wait(1)
+        bst.rotate(bst.root, Dir.RIGHT)
+        self.wait(1)
+        bst.rotate(bst.root, Dir.RIGHT)
+        self.wait(1)
+        bst.rotate(bst.root, Dir.LEFT)
+        self.wait(1)
+
+
+class BstRotateTree(Scene):
+    def construct(self):
+        animation_callback = BSTAnimationCallback(self)
+        animation_callback.enabled = False
+        bst = BST(animation_callback)
+
+        for i in [3,5,4,6,1,2,0]:
+            bst.insert(i)
+
+        animation_callback.enabled = True
+        animation_callback.node_position_animation(bst)
+
+
+        bst.rotate(bst.root, Dir.LEFT)
+        self.wait(1)
+
+        bst.rotate(bst.root, Dir.RIGHT)
+        self.wait(1)
+
+
+        bst.rotate(bst.root, Dir.RIGHT)
+        self.wait(1)
+
+        bst.rotate(bst.root, Dir.LEFT)
+        self.wait(1)
