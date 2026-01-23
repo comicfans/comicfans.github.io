@@ -1,4 +1,4 @@
-from manim import Circle,Text,VGroup,Line,always_redraw,Animation,Scene,Create,Rectangle,FadeOut
+from manim import Circle,Text,VGroup,Line,always_redraw,Animation,Scene,Create,Rectangle,FadeOut,MovingCameraScene
 import random
 from manim.typing import Point3D
 from copy import deepcopy
@@ -364,17 +364,15 @@ class BSTAnimationCallback(AnimationCallback):
         animation = [FadeOut(to_delete_ani.group_node)]
         self.flush_animation(animation)
 
-    def assign_position(self, parent_pos ,position_node:LayoutPositionNode, animation:list[Animation],current_depth = 0):
+    def assign_position(self, parent_pos ,position_node:LayoutPositionNode, animation:list[Animation], total_depth, current_depth = 0):
         if not position_node:
             return
 
-
-        children_pos = [None,None]
         pos = current_depth * manim.DOWN + position_node.merged_range[-1][0] * manim.RIGHT
 
         for dir in Dir:
-            children_pos[dir.value] = self.assign_position(pos, position_node.children[dir.value],animation,
-                                                           current_depth +1)
+            self.assign_position(pos, position_node.children[dir.value],animation,
+                                                           total_depth, current_depth +1)
         
         ani_node = self.node_for(position_node.tree_node)
         animation.append(ani_node.circle.animate.move_to(pos))
@@ -395,8 +393,6 @@ class BSTAnimationCallback(AnimationCallback):
         animation.append(ani_node.parent_edge.animate.put_start_and_end_on(pos - half,
                                                                            target_pos + manim.UP * 0.01))
 
-        return pos
-
 
     def node_position_animation(self, tree):
         position_node = LayoutPositionNode.fill_width(tree.root)
@@ -405,12 +401,71 @@ class BSTAnimationCallback(AnimationCallback):
         new_range = LayoutPositionNode.total_range(position_node)
 
         animation = []
-        self.assign_position(None,position_node,animation)
+        self.assign_position(None,position_node,animation,self_depth)
 
 
         screen_height = max(self_depth,1) * manim.UP[1]
         screen_left = (new_range[0]-0.5) * manim.RIGHT[0]
         screen_right = (new_range[1]-0.5) * manim.RIGHT[0]
+
+        new_center_y = -screen_height / 2 + CIRCLE_RADIUS*1.5
+        new_center_x = (screen_left + screen_right) / 2
+
+        #animation.append(self.rect.animate.stretch_to_fit_width(screen_right - screen_left).stretch_to_fit_height(screen_height).move_to(np.array([0,new_center_x,0])))
+        animation.append(self.rect.animate.stretch_to_fit_width(screen_right - screen_left).stretch_to_fit_height(screen_height).move_to(np.array([new_center_x,new_center_y,0])))
+
+        self.flush_animation(animation)
+
+class FixedAnimationCallback(BSTAnimationCallback):
+
+    def __init__(self,scene:Scene):
+        super().__init__(scene)
+
+    def assign_position(self, tree_node, parent_pos ,animation:list[Animation],total_depth, current_depth = 0):
+
+        if not tree_node:
+            return
+        
+        self_offset = 0
+        parent_tree_node = tree_node.parent_
+        if parent_tree_node:
+            self_side = Dir(int(tree_node == parent_tree_node.children_[Dir.RIGHT.value]))
+            self_offset = pow(2, total_depth - current_depth) * (1 if self_side == Dir.RIGHT else -1)
+
+        used_parent_pos = np.array([0,0,0]) if parent_pos is None else parent_pos
+
+        pos = used_parent_pos + np.array([0, (-CIRCLE_RADIUS * 4) if parent_tree_node else 0, 0]) + self_offset *  np.array([CIRCLE_RADIUS ,0,0])
+
+        for dir in Dir:
+            self.assign_position(tree_node.children_[dir.value],pos, animation,
+                                                           total_depth, current_depth +1)
+        
+        ani_node = self.node_for(tree_node)
+        animation.append(ani_node.circle.animate.move_to(pos))
+        animation.append(ani_node.text.animate.move_to(pos))
+        half = np.array([0, -CIRCLE_RADIUS,0])
+
+        target_pos = used_parent_pos - half
+        if parent_pos is not None:
+            target_pos = parent_pos + half
+
+        assert target_pos is not None
+
+        animation.append(ani_node.parent_edge.animate.put_start_and_end_on(pos - half,
+                                                                           target_pos + manim.UP * 0.01))
+
+        return pos
+     
+    def node_position_animation(self, tree):
+        animation = []
+
+        self_depth =  4
+        self.assign_position(tree.root,None, animation,self_depth, 0)
+
+
+        screen_height = self_depth * CIRCLE_RADIUS * 4
+        screen_left = -pow(2, self_depth) *  CIRCLE_RADIUS * 4/   4
+        screen_right =  pow(2, self_depth) *  CIRCLE_RADIUS * 4/  4
 
         new_center_y = -screen_height / 2 + CIRCLE_RADIUS*1.5
         new_center_x = (screen_left + screen_right) / 2
@@ -645,9 +700,10 @@ class BstRotate(Scene):
         self.wait(1)
 
 
-class BstRotateTree(Scene):
+class BstRotateTree(MovingCameraScene):
     def construct(self):
-        animation_callback = BSTAnimationCallback(self)
+        self.camera.frame.scale(1.3)
+        animation_callback = FixedAnimationCallback(self)
         animation_callback.enabled = False
         bst = BST(animation_callback)
 

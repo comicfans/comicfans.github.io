@@ -35,8 +35,9 @@ example: rotate at leaf node
 example: rotate with sub-trees
 
 ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/bst-rotate-tree.gif)
-such rotation always exist since it's binary search tree, the inner child sub-tree values, will always be in range of parent and grandparent
-by attaching inner child sub-tree to old-grandparent, it's still between old-parent and old-grandparent
+
+note: during rotation, the horizontal relative position never changed, whole BST flatten to exactly same ordered list, only relationship around the pivot node (children and grandson) changed, other part of tree keeps exactly same structure
+
 
 
 Now let's get into RB-tree. Most references and blogs focus on precise definition and operation rules,
