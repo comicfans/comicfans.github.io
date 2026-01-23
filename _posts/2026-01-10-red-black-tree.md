@@ -47,6 +47,9 @@ keep the reason 'why we're dong this' in mind first makes it much easier to unde
 (please note the list number also different to other references)
 
 1 why mark node with Red/Black color?  It's a way to help BST avoiding decay to linear list (by enforcing some rules)
+
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/bst-imbalance.gif)
+
 2 how to avoid BST decay to linear list?  by enforcing longest path shorter than 2 times of shortest path
 3 why BST requires no consequent red nodes? 
 4 why BST requires equal black height?
