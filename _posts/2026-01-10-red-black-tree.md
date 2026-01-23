@@ -87,6 +87,9 @@ property 4:  all path black height equal, since two child sub-tree share same ro
              their sub-tree black height are also equal. And no matter which color the root node 
              being changed to, both sub-tree still have same black height. 
              any sub-tree of a valid RB-Tree, is also valid RB-Tree (note we don't require root must be black)
+          
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/change-root-color-valid.png)
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/subtree-also-valid.png)
 
 property 5: turn RED-NODE to BLACK won't introduce new consequent red condition, also won't make the sub-tree invalid RB-Tree
 
