@@ -69,7 +69,7 @@ according to these rules, we know that:
 
 property 1 : RED node doesn't contribute to black height, so if modification (insert or delete) is red node, it will be the most simplest case
 
-![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/red-doesnt-contribute-black.png)
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/red-dont-contribute-black-height.png)
 
 
 property 2 : if we have two nodes, then parent must be Black, and child must be RED (otherwise the black height won't be equal)
