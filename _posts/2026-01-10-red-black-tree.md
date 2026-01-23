@@ -46,11 +46,12 @@ but I'll explain it by inaccurate 'idea' first, actual definition and rules seco
 keep the reason 'why we're dong this' in mind first makes it much easier to understand the details.
 (please note the list number also different to other references)
 
-1 why mark node with Red/Black color?  It's a way to help BST avoiding decay to linear list (by enforcing some rules)
+1 why mark node with Red/Black color?  It's a way to help BST avoiding decay to linear list
 
 ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/bst-imbalance.gif)
 
 2 how to avoid BST decay to linear list?  by enforcing longest path shorter than 2 times of shortest path
+
 3 why BST requires no consequent red nodes? 
 4 why BST requires equal black height?
   rule 3 and 4 should be considered together, they enforce that : 
@@ -62,7 +63,7 @@ keep the reason 'why we're dong this' in mind first makes it much easier to unde
   L <= S + S 
   this assume RB-Tree won't decay to linear list
 
-(some RB-Tree also requires root node must be black, we ignore this rule, it won't affect the basic properties of RB-Tree)
+(some RB-Tree also requires root node must be black, I ignore this rule, it won't affect too much)
 
 according to these rules, we know that:
 
@@ -73,15 +74,13 @@ property 1 : RED node doesn't contribute to black height, so if modification (in
 
 property 2 : if we have two nodes, then parent must be Black, and child must be RED (otherwise the black height won't be equal)
 
-graph
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/two-nodes-condition.png)
+
 
 property 3:  if we have three nodes (as subtree), it can only be 
 
-    R            B
-   /  \         / \
-   B  B        R   R
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/three-nodes-condition.png)
 
-   since any other structures violate RB-Tree rules
                        
 
 property 4:  all path black height equal, since two child sub-tree share same root node,
