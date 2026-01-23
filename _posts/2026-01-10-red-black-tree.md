@@ -11,29 +11,30 @@ Let's revise binary search tree (BST) first, some confusion explanation in RB-tr
 BST properties:
 
 1. parent node value is greater than any node of left-child sub-tree, and less than any node of right-child sub-tree
-2. the in-order successor element of a node, is the left-most node of right-child sub-tree, in-order predecessor is the right-most node of left-child sub-tree
+
+  ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/bst-prop1.png)
+  if "flatten" the BST, every value stay at their original horizontal position, then this will form a sorted list
+  ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/bst-flatten.png)
+
+2. the in-order successor element of a node, is the left-most node of right-child sub-tree, because it's the right side most near node after flatten
+
 3. new inserted node (new unique value), will always insert as leaf node, say, replace a null child, it will never 'replace' any existing node, or being the third child of some node
 
+  ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/bst-insert.gif)
 
-![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/BstInsert.gif)
+4. most important rule (to help understanding RB-tree deletion): when remove a value, it never remove the node directly, we always swap it with in-order successor, then we remove the replaced node
 
+  ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/bst-remove.gif)
+  since the in-order successor is the left-most node, so it either has only one right child, or no children at all (otherwise its left child will be more left )
 
-4. most important rule (to help understanding RB-tree deletion): when remove a value, it never remove the node directly, we always swap it with in-order successor (or predecessor), then we remove the replaced node
-
-![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/BstRemove.gif)
-
-And the in-order successor is the left-most node, so either it has only one right child, or no children at all (otherwise it still has more-left child)
-
-
-5. you can use child as the new ROOT to construct new valid BST by only a few pointer adjustment in-between parent,sibling and nephew, no need to dive into whole sub-tree,
-   (this is called rotation, I find plot easier to understand than text description myself)
+5. you can use child as the new ROOT to construct valid BST by only adjust parent,sibling and nephew relationship, other part of trees structure won't change, this is called rotation
 
 example: rotate at leaf node
-![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/BstRotate.gif)
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/bst-rotate.gif)
 
 example: rotate with sub-trees
 
-![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/BstRotateTree.gif)
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/bst-rotate-tree.gif)
 such rotation always exist since it's binary search tree, the inner child sub-tree values, will always be in range of parent and grandparent
 by attaching inner child sub-tree to old-grandparent, it's still between old-parent and old-grandparent
 
@@ -62,6 +63,9 @@ keep the reason 'why we're dong this' in mind first makes it much easier to unde
 according to these rules, we know that:
 
 property 1 : RED node doesn't contribute to black height, so if modification (insert or delete) is red node, it will be the most simplest case
+
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/red-doesnt-contribute-black.png)
+
 
 property 2 : if we have two nodes, then parent must be Black, and child must be RED (otherwise the black height won't be equal)
 
