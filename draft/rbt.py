@@ -455,4 +455,21 @@ class RbtInsertBlackUncle(MovingCameraScene):
         rbt.insert(-5)
         self.wait(1)
         
+class RbtInsertBlackUncleNear(MovingCameraScene):
+    def construct(self):
+        self.camera.frame.move_to(manim.DOWN*0.5)
+        callback = RBTreeAnimationCallback(self)
+        callback.enabled = False
+        rbt = RBTree(callback)
+
+        for i in [3,0,5,-4,-2,4,6,-1,1]:
+            rbt.insert(i)
+        for i in [4,6]:
+            rbt.remove(i)
+        callback.position_nodes(rbt)
+        callback.enabled = True
+        callback.position_nodes(rbt)
+        rbt.insert(2)
+        self.wait(1)
+        
 
