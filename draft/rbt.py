@@ -439,4 +439,3 @@ class RbtInsertRedUnclePushRoot(Scene):
         self.wait(1)
         
 
-
