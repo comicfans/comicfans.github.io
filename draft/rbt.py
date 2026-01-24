@@ -364,4 +364,20 @@ def test_case2():
     assert rbt.root is None
 
 
-test_case1()
+#test_case1()
+
+class RbtInsertNoUncle(Scene):
+    def construct(self):
+        callback = RBTreeAnimationCallback(self)
+        rbt = RBTree(callback)
+
+        callback.enabled = False
+        for i in [5,3]:
+            rbt.insert(i)
+        callback.enabled = True
+        callback.node_position_animation(rbt)
+        rbt.insert(1)
+        self.wait(1)
+        
+
+

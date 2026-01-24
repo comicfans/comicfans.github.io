@@ -46,24 +46,28 @@ but I'll explain it by inaccurate 'idea' first, actual definition and rules seco
 keep the reason 'why we're dong this' in mind first makes it much easier to understand the details.
 (please note the list number also different to other references)
 
-1 why mark node with Red/Black color?  It's a way to help BST avoiding decay to linear list
+1. why mark node with Red/Black color?  It's a way to help BST avoiding decay to linear list
 
-![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/bst-imbalance.gif)
+    ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/bst-imbalance.gif)
+    BST decay to list example
 
-2 how to avoid BST decay to linear list?  by enforcing longest path shorter than 2 times of shortest path
+2. how to avoid BST decay to linear list?  by enforcing longest path shorter than 2 times of shortest path
 
-3 why BST requires no consequent red nodes? 
-4 why BST requires equal black height?
-  rule 3 and 4 should be considered together, they enforce that : 
+3. why BST requires no consequent red nodes? This enforce along any path, RED nodes number won't exceed BLACK nodes + 1, if we requires ROOT always black, then RED <= BLACK  (following discussion omit ROOT must be black rule, doesn't affect most result except longest path length can be 2 times of shortest + 1)
 
+4. why BST requires equal black height? Combined with rule 3, we have
+
+
+```
   RED(max) <= BLACK
   longest path depth L = BLACK + RED(max)
   shortest path depth S = BLACK
   then 
   L <= S + S 
+```
+
   this assume RB-Tree won't decay to linear list
 
-(some RB-Tree also requires root node must be black, I ignore this rule, it won't affect too much)
 
 according to these rules, we know that:
 
@@ -93,12 +97,13 @@ property 4:  all path black height equal, since two child sub-tree share same ro
 
 property 5: turn RED-NODE to BLACK won't introduce new consequent red condition, also won't make the sub-tree invalid RB-Tree
 
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/red-to-black-valid.png)
 
 
 ## insertion
 
 idea: keep the goal in mind before getting into details,
-a RB-Tree will be valid after insertion if:
+an valid RB-Tree will be valid after insertion if:
 
 1. black height equal for all path
 2. no consequent red
@@ -106,28 +111,26 @@ a RB-Tree will be valid after insertion if:
 so our insertion strategy will be:
 
 1. not change black height,  so new inserted node should be RED (RBT property 1, RED doesn't contribute to black height),
-2. if we have consequent RED situation, try find nearby black nodes(parent/sibling/uncle), see if we can re-arrange them to move the 'extra red' in-between black nodes
-   (while maintaining exactly same black height)
-3. if 2 is not possible, then we try to make sub-tree valid RB-Tree (while maintaining same black height), 
+2. if we have consequent RED situation, try find nearby black nodes(parent/sibling/uncle), see if we can re-arrange them to move the 'extra red' in-between black nodes (while maintaining exactly same black height)
+3. if 2 is not possible, then we try to make larger sub-tree valid RB-Tree
    and push the extra red color upwards, expect we can resolve it at higher level
 
 
-by applying this idea, we will either fixing the violation at some step, or making higher and higher sub-tree valid RB-Tree until we reach root,
-so whole tree fixed. and RBTree property 4 also playing important rule here: for an valid RB-Tree, 
-any sub-tree is also valid RB-Tree, and left-right child will also have same black height
+by applying this idea, we will either fixing the violation at some step, or making higher and higher sub-tree valid until we reach root,
+so whole tree fixed. RBTree property 4 also playing important rule here: for an valid RB-Tree, any sub-tree is also valid RB-Tree, left-right child will have same black height 
 
 
 
 1. insert new Node as RED.
 
 2. if the parent is BLACK, then we already done (property 1) 
-   graph
+  ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/insert-1.png)
 
-3. if the parent is RED,  then it must contains no children before insertion (othwerwise violate property 2),
+3. if the parent is RED,  then it must contains no children before insertion (see two nodes all possible condition),
    so possible structures are (position can be left or right, doesn't matter)
-             P(arent)=RED  is root node                            P = BLACK
-             /                                   ===>            /
-          N(ew)= RED                                            N= RED
+
+  ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/red-parent-is-root.png)
+
 
 
 
