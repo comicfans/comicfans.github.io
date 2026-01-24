@@ -144,11 +144,9 @@ if new inserted node stay between parent and grandparent, first rotate at parent
 
      
 3.2 if uncle exist, then it must be RED (otherwise breaks black height rule). For such situation, we color Grandparent as red, P/U as BLACK (so the black height), then sub-tree under grandparent is fixed, but if grandgrandparent is red, it's possible to lead consequent red with grandgrandparent so we need recursively fix it (and then we treat G as 'new inserted node')
-           G = BLACK                                G = RED
-          /         \                               /      \
-       P = RED       U = RED           =>         P =BLACK   U = BLACK
-       |                                           |
-       N = RED                                    N = RED
+
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-red-uncle.gif)
+
 
 this is the situation that not enough black nodes nearby so we push the red color upwards and need further fixing
 An important point is that grandparent rooted sub-tree is now valid and black height equals to the value before insertion.
