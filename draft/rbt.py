@@ -28,8 +28,8 @@ class RBTreeAnimationCallback(BSTAnimationCallback):
         super().on_new_tree_node(tree_node)
         self.node_for(tree_node).circle.set_color(manim.RED)
 
-    def node_position_animation(self, tree):
-        super().node_position_animation(tree)
+    def position_nodes(self, tree):
+        super().position_nodes(tree)
 
         animation = []
         def rec_color(tree_node):
@@ -121,7 +121,9 @@ class RBTree(BST):
 
 
     def remove(self, value)->bool:
-        to_delete_node = self.find_node(value, False)
+        self.animation_callback.enabled = False
+        to_delete_node = self.find_pos(value)[2]
+        self.animation_callback.enabled = True
 
         if not to_delete_node:
             return False
@@ -149,7 +151,7 @@ class RBTree(BST):
             # the only condition that we might use child red to rebalance
             assert to_delete_node.children_[Dir.RIGHT.value].color_ == Color.RED
             to_delete_node.children_[Dir.RIGHT.value].color_ = Color.BLACK
-            self.animation_callback.node_position_animation(self)
+            self.animation_callback.position_nodes(self)
             self.check(True,True)
             return True
 
@@ -160,9 +162,9 @@ class RBTree(BST):
             self_dir = lowest_dir
 
             self.check()
-            self.animation_callback.node_position_animation(self)
+            self.animation_callback.position_nodes(self)
 
-        self.animation_callback.node_position_animation(self)
+        self.animation_callback.position_nodes(self)
         self.check(True,True)
         return True
 
@@ -263,11 +265,11 @@ class RBTree(BST):
             return ret
 
 
-        to_fix_node = self.find_node(value, with_animation=False)
+        to_fix_node = self.find_pos(value)[2]
 
         while to_fix_node:
             to_fix_node = self.insert_fix(to_fix_node)
-            self.animation_callback.node_position_animation(self)
+            self.animation_callback.position_nodes(self)
 
         self.check(True)
 
@@ -369,13 +371,13 @@ def test_case2():
 class RbtInsertNoUncle(Scene):
     def construct(self):
         callback = RBTreeAnimationCallback(self)
+        callback.enabled = False
         rbt = RBTree(callback)
 
-        callback.enabled = False
         for i in [5,3]:
             rbt.insert(i)
+        callback.position_nodes(rbt)
         callback.enabled = True
-        callback.node_position_animation(rbt)
         rbt.insert(1)
         self.wait(1)
         
