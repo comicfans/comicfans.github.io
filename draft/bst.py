@@ -28,7 +28,7 @@ class TreeNode:
     def __repr__(self):
         return f"{self.value}, parent:{self.parent_.value if self.parent_ else 'none'}  children: [{self.children_[0].value if self.children_[0] else 'none' }, {self.children_[1].value if self.children_[1] else 'none'}]"
 
-    def disconnect(self):
+    def attach_child_to_parent(self):
 
         assert self.children_[Dir.LEFT.value] is None or self.children_[Dir.RIGHT.value] is None
 
@@ -40,10 +40,6 @@ class TreeNode:
                 if self.children_[dir.value]:
                     self.children_[dir.value].parent_ = None
 
-        for dir in Dir:
-            self.children_[dir.value] = None
-
-        self.parent_ = None
 
     def set_child(self, dir: Dir, node):
         self.children_[dir.value] = node
@@ -267,6 +263,9 @@ class AnimationCallback:
 
 
     def position_nodes(self, tree):
+        pass
+
+    def wait(self, wait_after_run = 0.1):
         pass
 
 class BSTAnimationCallback(AnimationCallback):
@@ -520,8 +519,6 @@ class FixedAnimationCallback(BSTAnimationCallback):
 
         self.flush_animation(animation)
 
-class DummyAnimationCallback(AnimationCallback):
-    pass
 
 class BST:
 
@@ -571,23 +568,18 @@ class BST:
         return new_root
 
 
-    def remove(self, value, fill_before_remove = {})->bool:
+    def remove(self, value)->Tuple[TreeNode,Dir]:
 
         to_delete_node = self.find_pos(value)[2]
 
         if not to_delete_node:
-            return False
+            return [None,None]
 
         changing_root = to_delete_node == self.root
         in_order_successor = to_delete_node.in_order_successor()
 
-        def fill_info(to_delete_node):
-            fill_before_remove['to_delete_node'] = to_delete_node
-            fill_before_remove['parent'] = None if to_delete_node.parent_ is None else to_delete_node.parent_
-            fill_before_remove['right_child'] = to_delete_node.children_[Dir.RIGHT.value]
-            fill_before_remove['self_dir'] = None if to_delete_node.parent_ is None else Dir.LEFT if to_delete_node== to_delete_node.parent_.children_[Dir.LEFT.value] else Dir.RIGHT
 
-        fill_info(to_delete_node)
+        self_dir =  None if to_delete_node.parent_ is None else Dir(int(to_delete_node == to_delete_node.parent_.children_[Dir.RIGHT.value]))
 
         if in_order_successor :
             to_delete_node.swap(in_order_successor)
@@ -598,42 +590,42 @@ class BST:
             self.animation_callback.position_nodes(self)
             self.animation_callback.wait(0.2)
 
-            fill_info(to_delete_node)
-
-            to_delete_node.disconnect()
+            self_dir =  None if to_delete_node.parent_ is None else Dir(int(to_delete_node == to_delete_node.parent_.children_[Dir.RIGHT.value]))
+            to_delete_node.attach_child_to_parent()
             self.animation_callback.delete_node(to_delete_node)
 
             self.animation_callback.position_nodes(self)
             self.check()
-            return True
+            return [to_delete_node, self_dir]
 
         # no in-order successor, root is left child
         if changing_root:
             self.root = to_delete_node.children_[Dir.LEFT.value]
-        to_delete_node.disconnect()
+        to_delete_node.attach_child_to_parent()
         self.animation_callback.delete_node(to_delete_node)
         self.animation_callback.position_nodes(self)
         self.check()
+        return [to_delete_node, self_dir]
         
 
-    def insert(self, value)->bool:
+    def insert(self, value)->TreeNode:
         new_node = self.new_node(value)
         self.animation_callback.on_new_tree_node(new_node)
 
         if self.root is None:
             self.root = new_node
             self.animation_callback.position_nodes(self)
-            return True
+            return new_node
 
         parent,dir,node = self.find_pos(value)
 
         if node and node.value == value:
             self.animation_callback.on_delete_node(new_node)
-            return False
+            return None
 
         parent.set_child(dir, new_node)
         self.animation_callback.position_nodes(self)
-        return True
+        return new_node
 
     @staticmethod
     def depth(node: TreeNode)->int:

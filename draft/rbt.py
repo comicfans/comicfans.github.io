@@ -120,28 +120,18 @@ class RBTree(BST):
         return parent, parent_dir
 
 
-    def remove(self, value)->bool:
-        self.animation_callback.enabled = False
-        to_delete_node = self.find_pos(value)[2]
-        self.animation_callback.enabled = True
+    def remove(self, value)->Tuple[TreeNode, Dir]:
+        to_delete_node, self_dir = super().remove(value)
 
-        if not to_delete_node:
-            return False
 
-        fill_before_remove = {}
-
-        super().remove(value, fill_before_remove)
-
-        to_delete_node.parent_ = fill_before_remove['parent']
-        to_delete_node.children_[Dir.RIGHT.value] = fill_before_remove["right_child"]
-
-        if self.root is None:
+        if self.root is None or self_dir is None:
+            # clear tree or node is root to remove
             self.check(True,True)
-            return True
+            return [to_delete_node,self_dir]
 
         if to_delete_node.color_ == Color.RED:
             self.check(True,True)
-            return True
+            return [to_delete_node,self_dir]
 
         assert to_delete_node.color_ == Color.BLACK
         # deleting black, find if we can use sparse red node to complete it
@@ -155,7 +145,6 @@ class RBTree(BST):
             self.check(True,True)
             return True
 
-        self_dir = fill_before_remove['self_dir']
         lowest_node = to_delete_node
         while lowest_node:
             lowest_node, lowest_dir  = self.remove_fix(lowest_node, self_dir)
@@ -259,13 +248,11 @@ class RBTree(BST):
 
     def insert(self, value)->bool:
 
-        ret = super().insert(value)
+        to_fix_node = super().insert(value)
 
-        if not ret :
-            return ret
+        if not to_fix_node:
+            return None
 
-
-        to_fix_node = self.find_pos(value)[2]
 
         while to_fix_node:
             to_fix_node = self.insert_fix(to_fix_node)
@@ -307,7 +294,7 @@ class RBTree(BST):
 class RbtInsert1(Scene):
     def construct(self):
         callback = RBTreeAnimationCallback(self)
-        #callback = AnimationCallback()
+        callback = AnimationCallback()
         rbt = RBTree(callback)
 
         #rand_data = [0,5,3]
@@ -319,6 +306,7 @@ class RbtInsert1(Scene):
 
         random.shuffle(rand_data)
         for i in rand_data:
+            print(i)
             rbt.remove(i)
 
         #rand_data = list(range(20))
@@ -336,7 +324,7 @@ def test_case0():
         rbt.insert(i)
 
 def test_case1():
-    rand_data = list(range(100))
+    rand_data = list(range(1000))
     callback = AnimationCallback()
     rbt = RBTree(callback)
 
@@ -365,8 +353,24 @@ def test_case2():
 
     assert rbt.root is None
 
+def test_case3():
 
-#test_case1()
+    rand_data = [2, 4, 0, 3, 1]
+    callback = AnimationCallback()
+    rbt = RBTree(callback)
+    for i in rand_data:
+        rbt.insert(i)
+
+    for i in [4, 3, 1, 2, 0]:
+        if i == 2:
+            pdb.set_trace()
+        rbt.remove(i)
+
+    assert rbt.root is None
+
+
+
+test_case1()
 
 class RbtInsertNoUncle(Scene):
     def construct(self):
