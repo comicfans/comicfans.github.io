@@ -133,7 +133,7 @@ so whole tree fixed. RBTree property 4 also playing important rule here: for an 
 
 
 
-3.1  if uncle doesn't exist, we rotate at grandparent node like following:
+3.1  if uncle doesn't exist, we rotate at grandparent node like following: (in animation, we use gray color for black node)
 
 ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-no-uncle.gif)
 
@@ -160,12 +160,18 @@ An important point is that grandparent rooted sub-tree is now valid and black he
 4.1 if new parent is the root, just turn it into black (so tree black height finally increase one).  Remember , changed sub-tree still
     maintain exactly same black height as before insertion, so it's sibling tree don't need any adjustment.
 
+  ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-red-uncle-push-root.gif)
+
+
+```
+
                        P(arent) = RED       <---  is root                                 P(arent)  = BLACK
                       /             \                                                     /               \
   (previous grandparent)          S(ibling) BLACK                  ===>                N(ew)RED          S(ibling) BLACK
               L(owest) RED         /     \                                        
                  /   \             ...    ...                                      
                ...
+```
 
 
 4.2 similar to 3.2, just with more sub-tree (apply 3.2 fix and then recursive)

@@ -424,4 +424,19 @@ class RbtInsertRedUncle(Scene):
         self.wait(1)
         
 
+class RbtInsertRedUnclePushRoot(Scene):
+    def construct(self):
+        callback = RBTreeAnimationCallback(self)
+        callback.enabled = False
+        rbt = RBTree(callback)
+
+        for i in [3,1,4,0,5,2]:
+            rbt.insert(i)
+        callback.position_nodes(rbt)
+        callback.enabled = True
+        callback.position_nodes(rbt)
+        rbt.insert(-1)
+        self.wait(1)
+        
+
 
