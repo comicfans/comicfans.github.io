@@ -132,7 +132,6 @@ class AniNode:
                          )
         self.text.move_to(self.circle)
         self.parent_edge = Line(self.circle.get_top(),self.circle.get_top())
-        #self.scene.add(self.parent_edge)
         
         self.group_node = VGroup(self.circle, self.text, *self.parent_edge)
         self.group_node.move_to(NODE_INIT_POS)
