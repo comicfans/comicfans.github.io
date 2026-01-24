@@ -1,4 +1,4 @@
-from manim import Circle,Text,VGroup,Line,always_redraw,Animation,Scene,Create,Rectangle,FadeOut,MovingCameraScene
+from manim import Circle,Text,VGroup,Line,Animation,Scene,Create,Rectangle,FadeOut,MovingCameraScene
 import random
 from manim.typing import Point3D
 from copy import deepcopy
@@ -132,7 +132,7 @@ class AniNode:
                          )
         self.text.move_to(self.circle)
         self.parent_edge = Line(self.circle.get_top(),self.circle.get_top())
-        self.scene.add(self.parent_edge)
+        #self.scene.add(self.parent_edge)
         
         self.group_node = VGroup(self.circle, self.text, *self.parent_edge)
         self.group_node.move_to(NODE_INIT_POS)
@@ -278,15 +278,18 @@ class BSTAnimationCallback(AnimationCallback):
 
 
     def delete_node(self, tree_node):
-        animation = []
         del_ani = self.node_for(tree_node)
-        animation.append(del_ani.group_node.animate.move_to(NODE_INIT_POS))
-        # also animation edge disappear
-        animation.append(del_ani.parent_edge.animate.put_start_and_end_on(NODE_INIT_POS, NODE_INIT_POS))
-        self.flush_animation(animation)
-        animation.append(FadeOut(del_ani.group_node))
-        self.flush_animation(animation)
-        #animation.append(tree_node.group_node.animate.set_optical(0))
+
+        if self.enabled:
+            animation = []
+            animation.append(del_ani.group_node.animate.move_to(NODE_INIT_POS))
+            # also animation edge disappear
+            animation.append(del_ani.parent_edge.animate.put_start_and_end_on(NODE_INIT_POS, NODE_INIT_POS))
+            self.flush_animation(animation)
+            animation.append(FadeOut(del_ani.group_node))
+            self.flush_animation(animation)
+        else:
+            self.scene.remove(del_ani.group_node)
 
 
     def __init__(self, scene: Scene):

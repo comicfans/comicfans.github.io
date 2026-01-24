@@ -447,6 +447,8 @@ class RbtInsertBlackUncle(MovingCameraScene):
 
         for i in [3,1,5,-1,2,4,6,-3,0]:
             rbt.insert(i)
+        for i in [4,6]:
+            rbt.remove(i)
         callback.position_nodes(rbt)
         callback.enabled = True
         callback.position_nodes(rbt)
