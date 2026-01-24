@@ -35,7 +35,14 @@ class RBTreeAnimationCallback(BSTAnimationCallback):
         def rec_color(tree_node):
             if not tree_node:
                 return
-            animation.append(self.node_for(tree_node).circle.animate.set_color(manim.RED if tree_node.color_ == Color.RED else manim.DARK_GRAY))
+
+            call_obj = self.node_for(tree_node).circle
+            if self.enabled:
+                call_obj = call_obj.animate
+
+            ani = call_obj.set_color(manim.RED if tree_node.color_ == Color.RED else manim.DARK_GRAY)
+            if self.enabled:
+                animation.append(ani)
             rec_color(tree_node.children_[Dir.LEFT.value])
             rec_color(tree_node.children_[Dir.RIGHT.value])
 
@@ -260,7 +267,7 @@ class RBTree(BST):
 
         self.check(True)
 
-        return True
+        return to_fix_node
 
     def check(self, check_color= False, check_height = False):
         super().check()
@@ -370,7 +377,7 @@ def test_case3():
 
 
 
-test_case1()
+#test_case1()
 
 class RbtInsertNoUncle(Scene):
     def construct(self):
@@ -382,6 +389,7 @@ class RbtInsertNoUncle(Scene):
             rbt.insert(i)
         callback.position_nodes(rbt)
         callback.enabled = True
+        callback.position_nodes(rbt)
         rbt.insert(1)
         self.wait(1)
         
