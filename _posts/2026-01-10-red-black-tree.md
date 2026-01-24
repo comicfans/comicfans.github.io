@@ -143,48 +143,36 @@ if new inserted node stay between parent and grandparent, first rotate at parent
 
 
      
-3.2 if uncle exist, then it must be RED (otherwise breaks black height rule). For such situation, we color Grandparent as red, P/U as BLACK (so the black height), then sub-tree under grandparent is fixed, but if grandgrandparent is red, it's possible to lead consequent red with grandgrandparent so we need recursively fix it (and then we treat G as 'new inserted node')
+3.2 if uncle exist, then it must be RED (otherwise breaks black height rule). For such situation, we color Grandparent as red, P/U as BLACK (so the black height), then sub-tree under grandparent is fixed, but if grandgrandparent is red, it's possible to lead consequent red with grandgrandparent so we need recursively fix it. Then we treat G as 'new inserted node'
 
 ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-red-uncle.gif)
 
-
-this is the situation that not enough black nodes nearby so we push the red color upwards and need further fixing
-An important point is that grandparent rooted sub-tree is now valid and black height equals to the value before insertion.
-
-
+before and after transform comparison:  higher sub-tree became valid, black height stay unchanged, potential consequent red problem pushed upwards
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-red-uncle.png)
 
 
 4. condition 3.1/3.2 only consider the first iteration (insert node is leaf) condition, during recursive, it's possible to see different variants of 3
-   (note, we only recursive after 3.2, so next recursive we'll always see the lowest changed node as RED)
+   (note, we only need further fixing under condition 3.2, so next recursive we'll always see the 'lowest changed node' as RED). If new parent is black
+   then fixed completed, just like condition 1 (since 3.2 won't change black height) 
 
-4.1 if new parent is the root, just turn it into black (so tree black height finally increase one).  Remember , changed sub-tree still
-    maintain exactly same black height as before insertion, so it's sibling tree don't need any adjustment.
+4.1 if new red parent is the root, then turn root into black, so tree black height finally increase one.  Since changed sub-tree always
+    maintain exactly same black height as before insertion, equals to its sibling, so black height equal rule never breaks
 
   ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-red-uncle-push-root.gif)
 
 
-```
 
-                       P(arent) = RED       <---  is root                                 P(arent)  = BLACK
-                      /             \                                                     /               \
-  (previous grandparent)          S(ibling) BLACK                  ===>                N(ew)RED          S(ibling) BLACK
-              L(owest) RED         /     \                                        
-                 /   \             ...    ...                                      
-               ...
-```
 
 
 4.2 similar to 3.2, just with more sub-tree (apply 3.2 fix and then recursive)
-                 G(randparent) = BLACK                                         G (R)
-                 /                     \                                       /  \
-             P(arent) = RED             U(ncle) RED          ========>      P (B)   U (B)
-             /         \                 /  \                                  
-          N(ew) RED    S(ibling) BLACK      ...                                
-           / \ 
-           ...
 
+  ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-4.2.png)
 
 4.3 if new parent is not root, uncle is BLACK, sit far away to new appeared RED node 
+
+
+```
+
          G(B)                        P(B)                  use P as new root, then child S (between P and G horizontally) will become the new child of G
         /    \                      /   \                  after this, S still being inbetween P and G horizontally, then recolor P and G, 
       P(R)   U(B)                N(R)   G(R)
@@ -192,6 +180,9 @@ An important point is that grandparent rooted sub-tree is now valid and black he
     N(R) S(B)  ... ...               S(B)  U(B)
    / \   / \
 c1(B) c2(B) .. ...
+
+```
+
    in this diagram, left sub-tree has too many red node which can't fit , and we know uncle tree have black-black (G-U) structure, so we push that red color to uncle tree
    left state (before fixing), every subtree is already balanced, N(R), S(B), U(B) all have same black height, so after moving S as G child, G(R) is also balanced
    and path at N(R) changed from B->R->R  to B->R, black height also unchanged, thus after fixing, P is balanced. since it's Black, so no further fixing required
