@@ -392,6 +392,21 @@ class RbtInsertNoUncle(Scene):
         callback.position_nodes(rbt)
         rbt.insert(1)
         self.wait(1)
+
+
+class RbtInsertNoUncle2(Scene):
+    def construct(self):
+        callback = RBTreeAnimationCallback(self)
+        callback.enabled = False
+        rbt = RBTree(callback)
+
+        for i in [5,3]:
+            rbt.insert(i)
+        callback.position_nodes(rbt)
+        callback.enabled = True
+        callback.position_nodes(rbt)
+        rbt.insert(4)
+        self.wait(1)
         
 
 

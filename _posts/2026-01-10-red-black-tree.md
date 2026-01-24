@@ -133,21 +133,14 @@ so whole tree fixed. RBTree property 4 also playing important rule here: for an 
 
 
 
+3.1  if uncle doesn't exist, we rotate at grandparent node like following:
 
-            G(grandparent)=BLACK                  grandparent must be black (because parent is already RED)
-            /              \
-         P(arent)=RED       U(ncle)            uncle might not exist, or must be RED
-         /
-      N(ew)=RED
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-no-uncle.gif)
 
+if new inserted node stay between parent and grandparent, first rotate at parent level, make it same as first variant 
 
-3.1  if uncle not exist, then we simply turn G/P/N to balanced structure , so black height not changed
-     and everything done. Why color it as BLACK-RED-RED,  not RED-BLACK-BLACK ? both coloring won't change black height, but RED-BLACK-BLACK might lead consequent red (with grandgrandparent), which requires recursively fixing, is sub-optimal.
-      G =BLACK                         P = RED
-     /                               /     \
-    P = RED          =>             N=RED   G=RED
-   /
-  N = RED
+![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-no-uncle-inbetween.gif)
+
 
      
 3.2 if uncle exist, then it must be RED (otherwise breaks black height rule). For such situation, we color Grandparent as red, P/U as BLACK (so the black height), then sub-tree under grandparent is fixed, but if grandgrandparent is red, it's possible to lead consequent red with grandgrandparent so we need recursively fix it (and then we treat G as 'new inserted node')
