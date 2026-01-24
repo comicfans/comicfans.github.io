@@ -171,23 +171,14 @@ before and after transform comparison:  higher sub-tree became valid, black heig
 4.3 if new parent is not root, uncle is BLACK, sit far away to new appeared RED node 
 
 
-```
+  ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-4.3.png)
 
-         G(B)                        P(B)                  use P as new root, then child S (between P and G horizontally) will become the new child of G
-        /    \                      /   \                  after this, S still being inbetween P and G horizontally, then recolor P and G, 
-      P(R)   U(B)                N(R)   G(R)
-     /  \     / \      =>              /   \
-    N(R) S(B)  ... ...               S(B)  U(B)
-   / \   / \
-c1(B) c2(B) .. ...
-
-```
 
    in this diagram, left sub-tree has too many red node which can't fit , and we know uncle tree have black-black (G-U) structure, so we push that red color to uncle tree
    left state (before fixing), every subtree is already balanced, N(R), S(B), U(B) all have same black height, so after moving S as G child, G(R) is also balanced
    and path at N(R) changed from B->R->R  to B->R, black height also unchanged, thus after fixing, P is balanced. since it's Black, so no further fixing required
-
    
+  ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-uncle-black.gif)
 
 4.4 similar to 4.3, but new appeared RED and uncle near each other, so we have
       G(B)                        P (R)

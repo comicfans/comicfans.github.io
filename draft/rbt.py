@@ -5,7 +5,7 @@ import random
 from enum import Enum
 from typing import Tuple
 import manim
-from manim import Animation,Scene
+from manim import Animation,Scene,MovingCameraScene
 
 class Color(Enum):
     BLACK = 0
@@ -436,6 +436,21 @@ class RbtInsertRedUnclePushRoot(Scene):
         callback.enabled = True
         callback.position_nodes(rbt)
         rbt.insert(-1)
+        self.wait(1)
+        
+class RbtInsertBlackUncle(MovingCameraScene):
+    def construct(self):
+        self.camera.frame.move_to(manim.DOWN*0.5)
+        callback = RBTreeAnimationCallback(self)
+        callback.enabled = False
+        rbt = RBTree(callback)
+
+        for i in [3,1,5,-1,2,4,6,-3,0]:
+            rbt.insert(i)
+        callback.position_nodes(rbt)
+        callback.enabled = True
+        callback.position_nodes(rbt)
+        rbt.insert(-5)
         self.wait(1)
         
 
