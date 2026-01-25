@@ -184,29 +184,7 @@ before and after transform comparison:  higher sub-tree became valid, black heig
 
   ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-uncle-black-near.gif)
 
-```
-      G(B)                        P (R)
-     /     \                     /    \
-    P(R)   U(B)     ==/=>      S(B)    G(B)
-   /    \                             /   \
-  S(B)  N(R)                        N(R)   U(B)
-
-```
-
-  if we simply apply 4.3 operation, then we'll find that we can't make it rebalanced easily,
-so we pre-process it at P(R) level, make it become
-
-```
-        G(B)
-       /     \
-      N(R)   U(B)
-     /   \
-    P(R)  c2(B)
-   /   \
-  S(B)  c1(B)
-
-```
-since N and P are both red, so this also won't change black height, now it became situation 4.3 , which can be fixed by that step
+  ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-uncle-black-near.png)
 
 That's all possible conditions to fix after insertion.
 
