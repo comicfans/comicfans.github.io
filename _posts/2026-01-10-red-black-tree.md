@@ -191,8 +191,13 @@ That's all possible conditions to fix after insertion.
 
 
 
-note it's possible to fix violation by other way, say, we look into some random node to see if it can hold one extra color and re-color all sub-tree, this can also be valid fixing,
-apparently slower.
+note it's possible to fix violation by other way. By RED-BLACK tree definition, it shouldn't be too hard
+to prove that for a sub-tree with black height = N, the max depth is 2N + 1 depth (N black + N + 1 RED)
+which can hold 
+  total nodes T = 2 ^ (2N + 1) , 
+  RED nodes R = 2/3 T,  BLACK nodes B = 1/3 T 
+  or B = (T- 1) /3 , R = 2 B + 1 (if T can't be dived by 3).
+so we can check along ancestors to tell if it can hold extra color and construct whole sub-tree, which can also be valid fixing, just not most optimal.
 
 
 For deletion the basic idea still stay the same : try to re-arrange nearby nodes to fix violation,
