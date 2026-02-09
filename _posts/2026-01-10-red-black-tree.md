@@ -137,13 +137,13 @@ so whole tree fixed. RBTree property 4 also playing important rule here: for an 
 
 ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-no-uncle.gif)
 
-if new inserted node stay between parent and grandparent, first rotate at parent level, make it same as first variant 
+3.2 if new inserted node stay between parent and grandparent, first rotate at parent level, make it same as 3.1
 
 ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-no-uncle-inbetween.gif)
 
 
      
-3.2 if uncle exist, then it must be RED (otherwise breaks black height rule). For such situation, we color Grandparent as red, P/U as BLACK (so the black height), then sub-tree under grandparent is fixed, but if grandgrandparent is red, it's possible to lead consequent red with grandgrandparent so we need recursively fix it. Then we treat G as 'new inserted node'
+3.3 if uncle exist, then it must be RED (otherwise breaks black height rule). For such situation, we color Grandparent as red, P/U as BLACK (so the black height), then sub-tree under grandparent is fixed, but if grandgrandparent is red, it's possible to lead consequent red with grandgrandparent so we need recursively fix it. Then we treat G as 'new inserted node'
 
 ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-red-uncle.gif)
 
@@ -151,25 +151,23 @@ before and after transform comparison:  higher sub-tree became valid, black heig
 ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-red-uncle.png)
 
 
-4. condition 3.1/3.2 only consider the first iteration (insert node is leaf) condition, during recursive, it's possible to see different variants of 3
-   (note, we only need further fixing under condition 3.2, so next recursive we'll always see the 'lowest changed node' as RED). If new parent is black
-   then fixed completed, just like condition 1 (since 3.2 won't change black height) 
+4. condition 3 only consider the first iteration (insert node is leaf) condition, during recursive, it's possible to see different variants of 3.
+   Since we only need further fixing under condition 3.3, so next recursive we'll always see the 'lowest changed node' as RED. 
 
-4.1 if new red parent is the root, then turn root into black, so tree black height finally increase one.  Since changed sub-tree always
+4.1 If new parent is black then fixed completed, just like condition 2 (remember, every step we applied won't change black height) 
+
+4.2 if new red parent is the root, then turn root into black, so tree black height finally increase one.  Since changed sub-tree always
     maintain exactly same black height as before insertion, equals to its sibling, so black height equal rule never breaks
 
   ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-red-uncle-push-root.gif)
 
 
 
-
-
-4.2 similar to 3.2, just with more sub-tree (apply 3.2 fix and then recursive)
+4.3 similar to 3.3, just with more sub-tree (apply 3.3 fix and then recursive)
 
   ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-4.2.png)
 
-4.3 if new parent is not root, uncle is BLACK, sit far away to new appeared RED node 
-
+4.4 similar to 3.1, uncle is BLACK, sit far away to new appeared RED node 
 
   ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-4.3.png)
 
@@ -180,7 +178,7 @@ before and after transform comparison:  higher sub-tree became valid, black heig
    
   ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-uncle-black.gif)
 
-4.4 similar to 4.3, but new appeared RED and uncle near each other, so we have
+4.5 similar to 3.2, also first rotate at parent level, then it became 4.4
 
   ![image]({{ site.baseurl }}/images/2026-01-10-red-black-tree/rbt-insert-uncle-black-near.gif)
 
