@@ -28,7 +28,8 @@ and what interested me is the real-time FPS output, it shows 27.x FPS or 31.x FP
 seems... Perfectly match the latency since 32 x 31 ~ 1000  and 36 x 28 ~ 1000, is this by accident?
 Let's drawing a diagram to see how different blocks connected together:
 
-graph
+  ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/diagram.png)
+
 
 Let's draw in it in another way, camera image originated: this should give you better understanding:
 The two timestamps appeared on one image, is always the timestamp we mark in the loop, so of course
