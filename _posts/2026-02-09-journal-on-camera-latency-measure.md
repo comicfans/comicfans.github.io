@@ -7,11 +7,11 @@ Last week I was experimenting WebXR with webcam, it raised a interesting questio
 When talking about 'Latency', it's easily being mixed up with 'Frequency'. For example slogan of gaming monitor mention 'High Refresh Rate' brings you 'Low latency'. Let's consider a real-time football broadcast, your friend watches it on an 60HZ TV on earth, while you're watching on 1000HZ TV on the sun, then your eyes feels much smoother motion than your friend, while your latency is still worse since signal takes 8 minutes to arrive at 1000HZ TV. This example indicates that frequency only determine how small the time delta between two signal, and Latency means how long it takes the signal from real-world to the destination. That's also the reason 
 TV having 'gaming' mode to turn off time consuming image enhancing algorithm. Refresh rate stay the same, but latency from digital input to physical output will be lower.
 
-graph here
+  ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/tv_example.png)
 
 Before building up my own setup, I firstly tried a [script from github](https://github.com/perrytsao/Webcam-Latency-Measurement)
 
-graph here
+  ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/original_webcam.png)
 
 the logic is straightforward:
 
@@ -33,10 +33,11 @@ graph
 
 Let's draw in it in another way, camera image originated: this should give you better understanding:
 The two timestamps appeared on one image, is always the timestamp we mark in the loop, so of course
-the delta between two timestamp is just the interval between two camera image! The issue is that 
+the delta between two timestamp is just the interval  between two (or more) camera image! The issue is that 
 the timestamp which used as measure start is bounded to camera frequency (because the script draw on
-camera image and show it), even the camera latency is faster, the start timestamp is already out-of-date,
-so the measured latency is also bounded to the image interval.
+camera image and show it), even the camera latency is lower than that interval, the marked start time 
+is already out-of-date (since no camera update during that period), the measured latency precision is 
+also bounded to the image interval. 
 
 Inspired by the script, we should decouple the startup timestamp mark frequency from camera frequency,
 as fast as possible. My monitor working at 165HZ, much higher than webcam (30), should be good enough for this task.
@@ -127,7 +128,11 @@ we got following result:
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/slow-motion-page-flip-diff.png), 
 
-combined with the slow motion video, now I'am confident to say the 
+Here we see the jitter between two timestamp, since monitor refresh timing doesn't aligned to slowmo capture timing, it's possible
+that for one monitor fresh, the phone just capture latest content, but for another fresh, that timestamp already shown for 6 ms and
+being captured by phone
+
+combined with the slow motion video (no more than one new image appear at same time), now I'am confident to say the 
 KMS/DRM Qrcode display code is working as expected. Now using my
 webcam for similar analysis:
 
@@ -156,132 +161,24 @@ first, let's see the elapsed time (delta between two capture)
 
 the fps is a little offset to 10, actually it's 8.9 FPS most of time, and if we compare the delta between previous capture 
 and the delta between two timestamp on image (by qrcode), we will see
-
+ 
 ```
- (0.1120000000000001, '0.112'),
- (0.11600000000000055, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.11199999999999921, '0.112'),
- (0.11600000000000055, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11600000000000055, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.11199999999999832, '0.112'),
- (0.11600000000000144, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.11299999999999955, '0.112'),
- (0.11100000000000065, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (-0.1120000000000001, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11700000000000088, '0.116'),
- (0.11099999999999888, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11600000000000144, '0.116'),
- (0.11199999999999832, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11600000000000144, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.11299999999999955, '0.113'),
- (0.11599999999999966, '0.116'),
- (0.11100000000000065, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.11299999999999955, '0.112'),
- (0.11100000000000065, '0.111'),
- (0.11599999999999966, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11600000000000144, '0.116'),
- (0.11199999999999832, '0.112'),
- (0.11600000000000144, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.1120000000000001, '0.112'),
- (0.1120000000000001, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.11199999999999832, '0.112'),
- (0.11200000000000188, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.11199999999999832, '0.112'),
- (0.11200000000000188, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.11199999999999832, '0.112'),
- (0.11200000000000188, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.11200000000000188, '0.112'),
- (0.11199999999999832, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.11200000000000188, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.11199999999999832, '0.112'),
- (0.11200000000000188, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.11199999999999832, '0.112'),
- (0.11200000000000188, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.11199999999999832, '0.112'),
- (0.11200000000000188, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.11199999999999832, '0.112'),
- (0.11200000000000188, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.11199999999999832, '0.112'),
- (0.11200000000000188, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.11199999999999832, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.11200000000000188, '0.112'),
- (0.11199999999999832, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.11200000000000188, '0.112'),
- (0.11199999999999832, '0.112'),
- (0.11599999999999966, '0.116'),
- (0.11200000000000188, '0.112'),
- (0.11199999999999832, '0.112'),
- (0.11600000000000321, '0.116'),
- (0.11199999999999832, '0.112'),
- (0.11199999999999832, '0.112')]
+delta to prev capture, delta of two timestamp on image
+ 0.1120000000000001,  0.112,
+ 0.11600000000000055, 0.116,
+ 0.1120000000000001,  0.112,
+ 0.11199999999999921, 0.112,
+ 0.11600000000000055, 0.116,
+
+ ...
+ 0.11200000000000188, 0.112,
+ 0.11199999999999832, 0.112,
+ 0.11599999999999966, 0.116,
+ 0.11200000000000188, 0.112,
+ 0.11199999999999832, 0.112,
+ 0.11600000000000321, 0.116,
+ 0.11199999999999832, 0.112,
+ 0.11199999999999832, 0.112
 
 ```
 
@@ -289,6 +186,24 @@ this clearly shows that the 'latency' original script measure, is essential the 
 not the time signal travel to application. It's easy understandable if we consider a camera that only takes
 1 picture every 1 hour, the latency that camera send picture to application, won't be as slow as an hour,
 but due to the text drawn on image only update once per hour, so delta between text is always an hour.
+so original script result is only meaningful when transfer latency is much longer than one interval period.
+(original script also link to a result table of some camera tested, shows that the latency are always greater than one interval)
+
+  ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/original_tests.png)
+
+since I run original script with 30FPS setup and always got exactly 1 interval delta, it prove that the latency
+should be always less than one interval. Note, this conclusion doesn't conflict with previous 51.5 worst case result,
+the latency actually came from three parts:
+
+1. the time spend on signal travel over usb to our application memory, which is the fixed part
+2. the time camera wait from previous shutter complete, up to next shutter starts, which is FPS dependent
+3. the time when latest timestamp is flushing on screen. For 165HZ monitor, even we flush at every V-sync, one fixed timestamp will stay on screen for about 6 milliseconds, which also add latency, just like the time differences we use 240 slowmo to capture 165 monitor image.
+
+for reason 2 and 3, we can still have worst case latency that longer than one interval, but the captured timestamp delta perfectly
+matching interval, it can prove that before camera capture next frame, the exactly previous frame already being captured and shown on display, so in-between frames pending in queue,
+(otherwise two timestamps in one image must have delta >= 2*interval , not exactly equals to 1 interval)
+
+
 now let's measure it with my approach, this time it's more tricky, since the camera doesn't work the exactly
 way at different FPS, for 30 FPS streaming, even camera can't capture every monitor update, every frame still
 shows the correct pattern of image: clearest image always appear at bottom right (because we update qrcode top-bottom, left-right)
