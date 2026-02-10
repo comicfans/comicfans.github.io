@@ -4,12 +4,11 @@
 Last week I was experimenting WebXR with webcam, it raised a interesting question for me: how good is the camera latency? After spending another weekend on the measurement I bring this blog, an incomplete journal on Camera Latency Measuring.
 
 
-When talking about 'Latency', it's easily being mixed up with 'Frequency'. For example slogan of gaming monitor mention 'High Refresh Rate' brings you 'Low latency'. Let's consider a real-time football broadcast, your friend watches it on an 60HZ TV on earth, while you're watching on 1000HZ TV on the sun, then your eyes feels much smoother motion than your friend, while your latency is still worse since signal takes 8 minutes to arrive at 1000HZ TV. This example indicates that frequency only determine how small the time delta between two signal, and Latency means how long it takes the signal from real-world to the destination. That's also the reason 
-TV having 'gaming' mode to turn off time consuming image enhancing algorithm. Refresh rate stay the same, but latency from digital input to physical output will be lower.
+When talking about 'Latency', it's easily being mixed up with 'Frequency'. For example slogan of gaming monitor mention 'High Refresh Rate' brings you 'Low latency'. Let's consider a real-time football broadcast, your friend watches it on an 60HZ TV on earth, while you're watching on 1000HZ TV on the sun, then your eyes feels much smoother motion than your friend, while your latency is still worse since signal takes 8 minutes to arrive at 1000HZ TV. 
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/tv_example.png)
 
-Before building up my own setup, I firstly tried a [script from github](https://github.com/perrytsao/Webcam-Latency-Measurement)
+This example indicates that frequency only determine how small the time delta between two signal, and Latency means how long it takes the signal from real-world to the destination. It's also the reason TV having 'gaming' mode to turn off time consuming image enhancing algorithm. Refresh rate stay the same, but latency from digital input to physical output (photon) will be lower. My goal is to measure the time that spend from camera shutter complete read the image, up to such image arrived into our application's memory. Before building up my own setup, I firstly tried a [script from github](https://github.com/perrytsao/Webcam-Latency-Measurement)
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/original_webcam.png)
 
@@ -22,7 +21,6 @@ while read camera image
 
 ```
 
-
 when I tried this script with my webcam (30FPS), I got 32 milliseconds and 36 milliseconds,
 and what interested me is the real-time FPS output, it shows 27.x FPS or 31.x FPS
 seems... Perfectly match the latency since 32 x 31 ~ 1000  and 36 x 28 ~ 1000, is this by accident?
@@ -30,17 +28,18 @@ Let's drawing a diagram to see how different blocks connected together:
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/diagram.png)
 
+Let's draw in it in another way, it should give you better understanding:
 
-Let's draw in it in another way, camera image originated: this should give you better understanding:
-The two timestamps appeared on one image, is always the timestamp we mark in the loop, so of course
-the delta between two timestamp is just the interval  between two (or more) camera image! The issue is that 
-the timestamp which used as measure start is bounded to camera frequency (because the script only draw new timestamp on
-new captured image and show it), even the camera latency is lower than that interval, the marked start time 
-already out-of-date (since no camera update during that period), the measured latency precision is 
-also bounded to the image interval. 
+  ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/original_another_way.png)
 
-Inspired by the script, we should decouple the startup timestamp mark frequency from camera frequency,
-as fast as possible. My monitor working at 165HZ, much higher than webcam (30), should be good enough for this task.
+The two timestamps appeared on one image, is always the timestamp we mark in the loop,  when we calculate
+the delta between these two timestamp, of course it's just the time in-between two capture time,
+has nothing to do with the transfer time! The issue is that the timestamp used as start is bounded to camera frequency,
+when camera latency is lower than that interval, start timestamp is already out-of-date (since no camera update during that period), 
+the measured latency precision also bounded to the interval. 
+
+Inspired by that script, we should decouple the startup timestamp mark frequency from camera frequency,
+also refresh as fast as possible. My monitor worked at 165HZ, much higher than webcam (30), should be good enough for this task.
 
 First Try:
 
@@ -52,7 +51,7 @@ gif
 
 Second Try:
 
-  Spread the timestamp text along whole line, so individual timestamp will stay stable for a while.  Result: worked sort of
+  Spread the timestamp text along whole line, so individual timestamp will stay stable for a while.  Result: kind of worked 
 
 
 This approach also have other issues:
