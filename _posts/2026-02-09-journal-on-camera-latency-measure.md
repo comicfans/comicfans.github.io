@@ -15,18 +15,17 @@ Before building up my own setup, I firstly tried a [script from github](https://
 
 the logic is straightforward:
 
+```
 while read camera image
   draw timestamp on camera image
   show this image on screen
 
-Then point camera to the gui window, create two "reflections" in streaming, then you see 
-two timestamp in streaming, older one is previous round image shown on screen, newer one
-is when such capture (of previous image) arrived to application, difference should be the latency
-from camera to application.
+```
+
 
 when I tried this script with my webcam (30FPS), I got 32 milliseconds and 36 milliseconds,
-and what interested me is the script also output FPS of captured image, shows 27.x FPS or 31.x FPS
-seems... Perfectly match the latency 32 x 31 ~ 1000  and 36 x 28 ~ 1000, is this by accident?
+and what interested me is the real-time FPS output, it shows 27.x FPS or 31.x FPS
+seems... Perfectly match the latency since 32 x 31 ~ 1000  and 36 x 28 ~ 1000, is this by accident?
 Let's drawing a diagram to see how different blocks connected together:
 
 graph
@@ -34,9 +33,9 @@ graph
 Let's draw in it in another way, camera image originated: this should give you better understanding:
 The two timestamps appeared on one image, is always the timestamp we mark in the loop, so of course
 the delta between two timestamp is just the interval  between two (or more) camera image! The issue is that 
-the timestamp which used as measure start is bounded to camera frequency (because the script draw on
-camera image and show it), even the camera latency is lower than that interval, the marked start time 
-is already out-of-date (since no camera update during that period), the measured latency precision is 
+the timestamp which used as measure start is bounded to camera frequency (because the script only draw new timestamp on
+new captured image and show it), even the camera latency is lower than that interval, the marked start time 
+already out-of-date (since no camera update during that period), the measured latency precision is 
 also bounded to the image interval. 
 
 Inspired by the script, we should decouple the startup timestamp mark frequency from camera frequency,
