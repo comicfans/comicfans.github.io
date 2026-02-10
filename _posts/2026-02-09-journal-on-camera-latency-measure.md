@@ -45,7 +45,7 @@ First Try:
 
    Using console text print, it works like this:
   
-gif
+  ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/simple_text.gif)
 
   Result: failed, flushing too fast, camera can't catch clear text at all
 
@@ -53,6 +53,7 @@ Second Try:
 
   Spread the timestamp text along whole line, so individual timestamp will stay stable for a while.  Result: kind of worked 
 
+  ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/multi_text.gif)
 
 This approach also have other issues:
 * flushing doesn't aligned to V-sync, captured time is not most accurate
