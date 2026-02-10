@@ -294,14 +294,14 @@ way at different FPS, for 30 FPS streaming, even camera can't capture every moni
 shows the correct pattern of image: clearest image always appear at bottom right (because we update qrcode top-bottom, left-right)
 but 10FPS is like this:
 
-  ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/10fps_9_qrcode.png), 
+  ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/10fps_9_qrcode.gif), 
 
 no clear image pattern. looks like all qrcode appear/disappear at same time, lead lots of empty image. 
 my suspection is the shutter time too long, the short appear time image signal will be 'smooth' out.
 so I increase the number of qrcode grid from 3x3 to 4x4, also increasing the stay time of every qrcode,
 then the capture like this
 
-  ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/10fps_16_qrcode.png), 
+  ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/10fps_16_qrcode.gif), 
 
 and the latency plot
 
