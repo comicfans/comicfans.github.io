@@ -114,7 +114,7 @@ Then I use my phone's 240FPS slow motion to verify such setup actually work (gif
 
 by comparing the frame timestamp (using it's FPS) to the timestamp on every frame, we know if that timestamp is accurate or not.
 
-```
+```bash
 ffprobe -v error -select_streams v:0 -show_entries stream=avg_frame_rate,r_frame_rate -of default=noprint_wrappers=1 slowmo_clock_boottime.MOV
 
 r_frame_rate=240/1
@@ -144,7 +144,18 @@ but before testing , first verify v4l2 information, my webcame support variable 
 it automatically reduce the frame rate, 30 FPS setup might gives back 15 fps streaming (and if you wave hands in front of it, you find it restored to 30 FPS)
 which will be annoying for testing.
 
-after turning off that feature, I use my webcam to capture the qrcode screen, calculate the duration from latest qrcode timestamp of frame, to the timestamp of that frame being captured,
+```
+v4l2-ctl --all
+...
+
+     exposure_dynamic_framerate 0x009a0903 (bool)   : default=0 value=0
+
+# turn it off by
+v4l2-ctl -d /dev/video0 -c exposure_dynamic_framerate=0
+
+```
+
+Then I use my webcam to capture the qrcode screen, calculate the duration from latest qrcode timestamp of frame, to the timestamp of that frame being captured,
 I got following plot:
 
 
