@@ -33,7 +33,7 @@ The two timestamps appeared on one image, is always the timestamp we mark in the
 
 Original script always give exactly 1 interval delta on my setup, is also useful. It prove that before camera capture next frame, the exactly previous frame already being captured and shown on display, no frames pending in any queue, our capture+display logic is fast enough. Otherwise it will mark a none-previous frame by next timestamp, then two timestamps in one image must have delta > interval , not exactly equals to 1 interval.
 
-Inspired by that script, we should decouple the startup timestamp mark frequency from camera frequency, also refresh it as fast as possible. My monitor worked at 165HZ, much higher than webcam (30), should be good enough for this task.
+Inspired by that script, we should decouple the start timestamp mark display frequency from camera frequency, also refresh it as fast as possible. My monitor worked at 165HZ, much higher than webcam (30), should be good enough for this task.
 
 First Try: Using console text print, it works like this:
   
@@ -45,7 +45,7 @@ Second Try: Spread text along whole line, so individual timestamp will stay stab
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/multi_text.gif)
 
-This approach also have other issues:
+This approach have other drawbacks:
 * flushing doesn't aligned to V-sync, captured time is not most accurate
 * App run under GUI virtual terminal, which might have it's internal buffering lead extra latency
 * GUI output controlled by window manager, hard to reason about buffer queue.
