@@ -183,7 +183,7 @@ Firstly let's see the time spend between two capture
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/10fps_capture_delta.png), 
 
-the fps is a little slow than 10, 8.9 FPS most of time, and if we compare this data to the delta of two timestamp on image (by qrcode), we will see
+the fps is a little slow than 10, 8.9 FPS most of time, Secondly if we compare this data to the delta of two timestamp on image (by qrcode), we will see
  
 ```
 capture delta , qrcode delta
@@ -222,21 +222,20 @@ the latency actually came from three parts:
 2. the time camera wait from previous shutter complete, up to next shutter starts, which is FPS dependent
 3. the time when latest timestamp is flushing on screen. For 165HZ monitor, even we flush at every V-sync, one fixed timestamp will stay on screen for about 6 milliseconds, which also add latency, just like the time differences we use 240 slowmo to capture 165 monitor image.
 
-for reason 2 and 3, we can still have worst case latency that longer than one interval, but the captured timestamp delta perfectly
-matching interval, it can prove that before camera capture next frame, the exactly previous frame already being captured and shown on display, no in-between frames pending in queue,
-(otherwise two timestamps in one image must have delta >= 2*interval , not exactly equals to 1 interval)
+for reason 2 and 3, we can still have worst case latency that longer than one interval. 
+The captured timestamp delta perfectly matching interval by original script can prove that before camera capture next frame, the exactly previous frame already being captured and shown on display, no in-between frames pending in queue,
+(otherwise the script will mark a none-previous frame by interval, then two timestamps in one image must have delta > interval , not exactly equals to 1 interval)
 
 
-now let's measure it with my approach, this time it's more tricky, since the camera doesn't work the exactly
+Thirdly let me measure it with my approach, this time it's more tricky, since the camera doesn't work the exactly
 way at different FPS, for 30 FPS streaming, even camera can't capture every monitor update, every frame still
-shows the correct pattern of image: clearest image always appear at bottom right (because we update qrcode top-bottom, left-right)
+shows the correct pattern of image: clearest image always appear at bottom right (because we draw new qrcode top-bottom, left-right)
 but 10FPS is like this:
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/10fps_9_qrcode.gif), 
 
-no clear image pattern. looks like all qrcode appear/disappear at same time, lead lots of empty image. 
-my suspection is the shutter time too long, the short appear time image signal will be 'smooth' out.
-so I increase the number of qrcode grid from 3x3 to 4x4, also increasing the stay time of every qrcode,
+Looks like all qrcode appear/disappear at same time, lead lots of empty image. 
+my suspect is that short appeared image signal will be 'smooth' out, compared to long shutter time. I increase the number of qrcode grid from 3x3 to 4x4, also increasing the stay time of every qrcode,
 then the capture like this
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/10fps_16_qrcode.gif), 
@@ -245,7 +244,8 @@ now I have better result
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/10fps_latency_plot.png), 
 
-average latency 82.9 ms, best case 53 ms, worst case 113 ms
+average latency 82.9 ms, best case 53 ms, worst case 113 ms. Again, this data
+makes more sense, with longer interval, we observe the latency (lead by 3 different parts) pattern being dominated by Interval. The period of this pattern is about 3 times of screen interval (6x3 ~ 18), 
 
 
 
