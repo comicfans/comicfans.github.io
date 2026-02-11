@@ -58,7 +58,7 @@ Then I tried to put Linux under VGA/SVGA mode (to get ride of KMS/DRM stack), af
 * provides notify callback when flip is finished, allow accurate timing recording.
 * support OpenGL(ES) painting, GPU still take the heavy lifting
  
-There's also a KMS/DRM thin wrapper [SRM](https://cuarzosoftware.github.io/SRM/index.html) allows you to quickly start OpenGL(ES) drawing. It's callback based, assume opengl painting trigger exactly once in-between two flips, thus perfectly align to V-sync
+There's also a KMS/DRM thin wrapper [SRM](https://cuarzosoftware.github.io/SRM/index.html) allows you to quickly start OpenGL(ES) drawing. It's callback based, assume opengl painting trigger exactly once in-between two flips, thus perfectly align to V-sync (if paint time won't exceed frame interval)
 
 Third Try: This time I use QRcode to display timestamp information on screen, make automatic post-processing possible. Similar to the text painting, QrCode are also placed at different location on screen and stay for a while. With this trick, even monitor flushing at 165 HZ, one QRCode can stay for more than 1/165 second. The more you arrange, the longer it stay. 30 FPS camera also has enough time to capture stable image. otherwise a QRCode may already show on screen and disappeared without camera notice. Since there's still no way to measure the time spend on page flip itself (after we sending flip to kernel, up to the monitor start sending photon for that contents). The best we can do is to use the page flipped callback (of previous frame) timestamp. This will make latency result longer than actual value (1/165 second at most). diagram of my latency measure:
 
@@ -80,7 +80,7 @@ the monitor information reported by xrandr
 ```
 FPS calculated from this information should be 645000000 / 2640 / 1480 ~ 165.07985 FPS, differences < 1e-5, should be good enough.
 
-OpenGL(ES) QrCode painting logic is written with help of chatgpt, But testing/debugging KMS/DRM application is quite painful since it takes full control of whole frame buffer (so ctrl+alt+FN switching won't work), so I wrote a GLUT entry to test everything under normal x11 environment, once it's done, switching to SRM entry just works. Then I use my phone's 240FPS slow motion to verify such setup actually work (gif play already slow down):
+OpenGL(ES) QrCode painting logic is written with help of chatgpt, But testing/debugging KMS/DRM application is quite painful since it takes full control of whole frame buffer (ctrl+alt+FN switching won't work), so I wrote a GLUT entry to test everything under normal x11 environment, once it's done, switching to SRM entry just works. Then I use my phone's 240FPS slow motion to verify such setup actually work (gif play already slow down):
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/phone-slow-motion.gif)
 
@@ -94,7 +94,7 @@ r_frame_rate=240/1
 avg_frame_rate=154080/641 ~ 240.37 FPS
 ```
 
-Use avg_frame_rate (actual file frame rate) instead of r_frame_rate. Consumer grade slow motion recording usually deployed variable frame rate, 240 is not always the exactly value. Compare the delta between slowmo frame timestamp and the latest QrCode timestamp on that frame (by aligning start time of both time series). we got following result:
+Use avg_frame_rate (actual file frame rate) instead of r_frame_rate. Consumer grade slow motion recording usually deployed variable frame rate, 240 is not always the exactly value. By aligning start time of both time series, I got following result :
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/slow-motion-page-flip-diff.png), 
 
