@@ -170,6 +170,8 @@ still not the correct image pattern, but at least better:
 
 Average latency 82.9 ms, best case 53 ms, worst case 113 ms. So latency range should be 47 ~ 113. Such value seems more matched to original script result because it's dominated by the frequency part of latency.
 
+Side notes: I also tested with realtime kernel, or switching cpu governer (powersaving/performance) didn't see too much changes. Someone 
+said that the usb hub directly to CPU should have [lower latency](https://github.com/MariusHeier/cpu-direct-usb), I tried to connect my webcam to 15b6 (AMD CPU-Integrated, CHIP 0 - LOWEST LATENCY Raphael/Granite Ridge USB 3.1 xHCI, Ryzen 7000/9000 Desktop AM5) and 43fc( AMD Chipset CHIP 1 800 Series Chipset USB 3.x XHCI Controller X870/B850 AM5), also don't see any significant differences.
 
 
 How Nvidia measure input E2E latency? it's called (LDAT)[https://developer.nvidia.com/nvidia-latency-display-analysis-tool], a photon sensor attached in front of monitor, and registered as mouse. It measure the elapsed time
