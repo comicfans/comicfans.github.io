@@ -21,37 +21,27 @@ while read camera image
 
 ```
 
-when I tried this script with my webcam (30FPS), I got 32 milliseconds and 36 milliseconds,
-and what interested me is the real-time FPS output, it shows 27.x FPS or 31.x FPS
-seems... Perfectly match the latency since 32 x 31 ~ 1000  and 36 x 28 ~ 1000, is this by accident?
-Let's drawing a diagram to see how different blocks connected together:
+when I tried this script with my webcam (30FPS), I got 32 milliseconds and 36 milliseconds, and what interested me is the real-time FPS output, it shows 27.x FPS or 31.x FPS. Seems... Perfectly match the latency ?32 x 31 ~ 1000  and 36 x 28 ~ 1000, is this by accident? Let's drawing a diagram to see how different blocks connected together:
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/diagram.png)
 
-Let's draw in it in another way, it should give you better understanding:
+or in another way:
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/original_another_way.png)
 
-The two timestamps appeared on one image, is always the timestamp we mark in the loop,  when we calculate
-the delta between these two timestamp, of course it's just the time in-between two capture time,
-has nothing to do with the transfer time! The issue is that the timestamp used as start is bounded to camera frequency,
-when camera latency is lower than that interval, start timestamp is already out-of-date (since no camera update during that period), 
-the measured latency precision also bounded to the interval. 
+The two timestamps appeared on one image, is always the timestamp we mark in the loop,  when we calculate the delta between these two timestamps, of course it's just the time in-between two capture time, has nothing to do with the transfer time! The issue is that the timestamp used as start is bounded to camera frequency, when camera latency is lower than that interval, start timestamp already out-of-date (since no camera update during that period), the measured latency precision also bounded to the interval. 
 
-Inspired by that script, we should decouple the startup timestamp mark frequency from camera frequency,
-also refresh as fast as possible. My monitor worked at 165HZ, much higher than webcam (30), should be good enough for this task.
+Original script always give exactly 1 interval delta on my setup, is also useful. It prove that before camera capture next frame, the exactly previous frame already being captured and shown on display, no frames pending in any queue, our capture+display logic is fast enough. Otherwise it will mark a none-previous frame by next timestamp, then two timestamps in one image must have delta > interval , not exactly equals to 1 interval.
 
-First Try:
+Inspired by that script, we should decouple the startup timestamp mark frequency from camera frequency, also refresh it as fast as possible. My monitor worked at 165HZ, much higher than webcam (30), should be good enough for this task.
 
-   Using console text print, it works like this:
+First Try: Using console text print, it works like this:
   
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/simple_text.gif)
 
-  Result: failed, flushing too fast, camera can't catch clear text at all
+Result: failed, flushing too fast, camera can't catch clear text at all
 
-Second Try:
-
-  Spread the timestamp text along whole line, so individual timestamp will stay stable for a while.  Result: kind of worked 
+Second Try: Spread text along whole line, so individual timestamp will stay stable.  Result: kind of worked 
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/multi_text.gif)
 
@@ -61,34 +51,19 @@ This approach also have other issues:
 * GUI output controlled by window manager, hard to reason about buffer queue.
 * Manually look into every image required, not automatic
 
-Firstly I tried to put Linux running under VGA/SVGA mode (to get ride of KMS/DRM stack),
-but after some rounds searching with chatgpt/google, I found such functionality
-already implemented by graphics card (instead of monitor), and on UEFI this is replaced by GOP,
-No support for high refresh rate other than 60HZ is also a major problem. Then I looked into
-KMS/DRM information, it already support what I need
+Then I tried to put Linux under VGA/SVGA mode (to get ride of KMS/DRM stack), after some rounds searching with chatgpt/google, I realized such functionality already implemented by graphics card (not monitor), and on UEFI it's replaced by GOP, Not support higher than 60HZ refresh rate is also a major problem. So I looked into KMS/DRM information, it already has everything I need
 
 * complete frame buffer control, no window system/manager in charge.
 * atomic flip, allow perfect match to V-sync
+* provides notify callback when flip is finished, allow accurate timing recording.
 * support OpenGL(ES) painting, GPU still take the heavy lifting
  
-And then I find a library [SRM](https://cuarzosoftware.github.io/SRM/index.html) which is a thin wrapper of KMS/DRM
-allow you quickly start OpenGL(ES) drawing. This time I use QRcode to display timestamp information
-on screen, so automatic post-processing can be applied. Similar to the text painting, the painting
-also arrange QrCode at different area of screen and stay for a while, 
-with this trick, even monitor is flushing at 165 HZ, one QRCode can stay for more than 1/165 second,
-the more you arrange, the longer it stay, 30 FPS camera can also have enough time to capture stable image.
-Without this, a QRCode may already show on screen and then disappeared without camera notice.
-DRM/KMS also provides notify callback when flip is finished, allow us to record accurate timing information.
+There's also a KMS/DRM thin wrapper [SRM](https://cuarzosoftware.github.io/SRM/index.html) allows you to quickly start OpenGL(ES) drawing. It's callback based, assume opengl painting trigger exactly once in-between two flips, thus perfectly align to V-sync
+
+Third Try: This time I use QRcode to display timestamp information on screen, make automatic post-processing possible. Similar to the text painting, QrCode are also placed at different location on screen and stay for a while. With this trick, even monitor flushing at 165 HZ, one QRCode can stay for more than 1/165 second. The more you arrange, the longer it stay. 30 FPS camera also has enough time to capture stable image. otherwise a QRCode may already show on screen and disappeared without camera notice. Since there's still no way to measure the time spend on page flip itself (after we sending flip to kernel, up to the monitor start sending photon for that contents). The best we can do is to use the page flipped callback (of previous frame) timestamp. This will make latency result longer than actual value (1/165 second at most).
 
 
-for KMS/DRM opengl painting (with SRM), it works like this way:
-
-* you receive page flipped notification, knows that previous frame buffer already being flipped, record timing information there.
-* paintGL callback will only trigger exactly once before next frame flip, you can draw anything for next frame,  then using srmConnectorRepaint to swap it, it will be used for next available flip
-* since there's still no way to measure the time spend on page flip itself (after we sending flip to kernel, up to the monitor start sending photon for that contents). The best we can do is to use the page flipped (of previous time) timestamp, and assume time that contents start displaying on monitor shouldn't be too late(actually this doesn't matter too much, as we can see later, our measure is a closed loop by an unique clock source so that part of time also being considered).
-
-
-I start with SRM examples, to recroding the pageFlipped timing, got this plot:
+I start with the SRM examples, to recroding the pageFlipped timing, got this plot:
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/page-flipped-timing.png)
 
@@ -101,18 +76,14 @@ the monitor information reported by xrandr
         v: height 1440 start 1446 end 1454 total 1480           clock 165.08Hz
 
 ```
-FPS calculated fro mthis information should be 645000000 / 2640 / 1480 ~ 165.07985 FPS
-differences < 1e-5, should be good enough.
+FPS calculated from this information should be 645000000 / 2640 / 1480 ~ 165.07985 FPS, differences < 1e-5, should be good enough.
 
-Then create a QrCode painting logic with OpenGL(ES), with help of chatgpt/google. But testing/debugging on KMS/DRM application
-is quite unfriendly because your code takes control of whole frame buffer (so ctrl+alt+FN switching won't work), so I wrote a simple
-glut entry for glue, then testing everything under normal x11 environment. Once it's done, switching to SRM will be painless.
-Then I use my phone's 240FPS slow motion to verify such setup actually work (gif play already slow down):
+OpenGL(ES) QrCode painting logic is written with help of chatgpt, But testing/debugging KMS/DRM application is quite painful since it takes full control of whole frame buffer (so ctrl+alt+FN switching won't work), so I wrote a GLUT entry to test everything under normal x11 environment, once it's done, switching to SRM entry just works. Then I use my phone's 240FPS slow motion to verify such setup actually work (gif play already slow down):
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/phone-slow-motion.gif)
 
 
-by comparing the frame timestamp (using it's FPS) to the timestamp on every frame, we know if that timestamp is accurate or not.
+by comparing the frame timestamp (using it's FPS) to the timestamp on every frame, we can test if timestamp is accurate.
 
 ```bash
 ffprobe -v error -select_streams v:0 -show_entries stream=avg_frame_rate,r_frame_rate -of default=noprint_wrappers=1 slowmo_clock_boottime.MOV
@@ -121,32 +92,16 @@ r_frame_rate=240/1
 avg_frame_rate=154080/641 ~ 240.37 FPS
 ```
 
-the trick here is to use avg_frame_rate (actual file frame rate) instead of r_frame_rate. Consumer grade slow motion recording 
-usually deployed variable frame rate, 240 is not always the exactly value. then compare the delta between slowmo frame timestamp
-and the latest QrCode timestamp on that frame (by aligning first slowmo frame time to first frame latest Qrcode timestamp).
-we got following result:
+Use avg_frame_rate (actual file frame rate) instead of r_frame_rate. Consumer grade slow motion recording usually deployed variable frame rate, 240 is not always the exactly value. Compare the delta between slowmo frame timestamp and the latest QrCode timestamp on that frame (by aligning start time of both time series). we got following result:
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/slow-motion-page-flip-diff.png), 
 
-Here we see the jitter between two timestamp, since monitor refresh timing doesn't aligned to slowmo capture timing, it's possible
-that for one monitor fresh, the phone just capture latest content, but for another fresh, that timestamp already shown for 6 ms and
-being captured by phone
+Here we see the jitter between two time series, since monitor refresh timing doesn't aligned to slowmo capture timing, it's possible that the phone capture just appeared content, or capture the very out-of-date content (already stay for 1/165 sec on screen). The slow motion video shows that no more than one new image appear at same time, so now I'm confident to say the KMS/DRM Qrcode flush logic is correct. 
 
-
-
-
-combined with the slow motion video (no more than one new image appear at same time), now I'am confident to say the 
-KMS/DRM Qrcode display code is working as expected. Now using my
-webcam for similar analysis:
-
-
-but before testing , first verify v4l2 information, my webcame support variable frame rate, when it detects not so much motion in scene,
-it automatically reduce the frame rate, 30 FPS setup might gives back 15 fps streaming (and if you wave hands in front of it, you find it restored to 30 FPS)
-which will be annoying for testing.
+And we also need to verify v4l2 setup, my webcame support variable frame rate, automatically reduce the frame rate if no big motion in scene (and automatically restore FPS if you wave your hand in front), annoying for latency testing.
 
 ```
-v4l2-ctl --all
-...
+v4l2-ctl --all| grep dynamic_framerate
 
      exposure_dynamic_framerate 0x009a0903 (bool)   : default=0 value=0
 
@@ -155,31 +110,20 @@ v4l2-ctl -d /dev/video0 -c exposure_dynamic_framerate=0
 
 ```
 
-Then I use my webcam to capture the qrcode screen, calculate the duration from latest qrcode timestamp of frame, to the timestamp of that frame being captured,
+Then I use my webcam to capture the screen video, calculate the duration from latest qrcode timestamp of frame, to the timestamp of that frame being captured,
 I got following plot:
 
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/my_latency_30fps.png), 
 
 
-this plot makes more sense, since the monitor and webcam are working at different frequency, the latency (by using timestamp shown on monitor) should 
-have jitter just like slowmo-timestamp plot, instead of a fixed value.
-The best case latency is 32ms, Note, we're using previous frame page flipped
-callback time as the QrCode, and mark the received back time of the image,
+This data makes more sense, the latency should have jitter just like slowmo-timestamp plot, instead of a fixed value. We have best case 32ms, worst case 51.5 ms and avg 41.2ms. Note, our result is longer than actual value at most 1/165 sec, so all these values are the "worst case" value. So the latency of my webcam will be in range 26ms ~ 51.5ms, the latency came from 2 parts:
 
-It is a closed loop, all possible latency already considered (including the time spend on signal travel the cable and became photon from monitor)
-so this is the "worst case of" best case value. "best case of" best case latency can be 32ms - 1/165.07868 sec ~ 26ms, 
-(if the duration starts when page flipped up to next frame being on display is exactly 1 monitor frame time)
-and due to monitor flush rate not aligned to webcam shutter, it's possible that shutter just missed the new monitor contents, then that contents
-being captured by next shutter, which is the worst case (51.5 ms). In theory the worst case latency should be equal to best case latency + 1 webcam frame time (33ms)
-here we got 19.5 ms, because the camera shutter is not instant, it needs to work earlier before next frame transfer.
-the average latency (worst case) is 41.1853.
+1. the time spend on signal travel over usb to our application memory, it depends on streaming data size. It decides the best case latency
+2. the camera FPS, It decides the worst case latency
 
 
-Now let's verify the latency for low FPS setup. By forcing the FPS to 10, we can observe the differences between my measure and original script.
-we can predict that original script bound the update frequency to camera frequency, so it won't gives latency that lower than 1/10 sec.
-I also made some changes to that script, painting qrcode instead of text timestamp, also recording the elapsed time since last time received image.
-Firstly let's see the time spend between two capture
+Now let's verify the latency for low FPS setup. By forcing the FPS to 10, we can predict that original script will always give latency that are 1/10 sec. I made change original script to paint qrcode instead of text timestamp, also recording the elapsed time since last time received image. Firstly let's see the time delta between two captures:
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/10fps_capture_delta.png), 
 
@@ -205,47 +149,24 @@ capture delta , qrcode delta
 
 ```
 
-this clearly shows that the 'latency' original script measure, is essential the delta between two capture,
-not the time signal travel to application. It's easy understandable if we consider a camera that only takes
-1 picture every 1 hour, due to the text drawn on image only update once per hour, the latency measured by 
-original script is always an hour. the time signal traveling to our application is much faster, but dominated 
-by 1 hour interval time. So Original script result is only meaningful when transfer latency is much longer than one interval period.
-(it also link to a table of some camera tested result, shows that the latency are always greater than one interval)
+this clearly shows that the 'latency' original script measure, is essential the delta between two capture, not the time signal travel to application. Consider a camera that only takes 1 picture every 1 hour, due to the text drawn on image only update once per hour, the latency measured by original script is always an hour. The time signal traveling to our application is much faster, but dominated by 1 hour interval time. So Original script result is only meaningful when transfer latency is much longer than one interval period. (it also link to a table of some cameras result, all latencies are greater than one interval)
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/original_tests.png)
 
-since I run original script with 30FPS setup and always got exactly 1 interval delta, it prove that the latency
-should be always less than one interval. Note, this conclusion doesn't conflict with previous 51.5ms worst case result (compared to 33ms interval),
-the latency actually came from three parts:
 
-1. the time spend on signal travel over usb to our application memory, which is the fixed part
-2. the time camera wait from previous shutter complete, up to next shutter starts, which is FPS dependent
-3. the time when latest timestamp is flushing on screen. For 165HZ monitor, even we flush at every V-sync, one fixed timestamp will stay on screen for about 6 milliseconds, which also add latency, just like the time differences we use 240 slowmo to capture 165 monitor image.
-
-for reason 2 and 3, we can still have worst case latency that longer than one interval. 
-The captured timestamp delta perfectly matching interval by original script can prove that before camera capture next frame, the exactly previous frame already being captured and shown on display, no in-between frames pending in queue,
-(otherwise the script will mark a none-previous frame by interval, then two timestamps in one image must have delta > interval , not exactly equals to 1 interval)
-
-
-Thirdly let me measure it with my approach, this time it's more tricky, since the camera doesn't work the exactly
-way at different FPS, for 30 FPS streaming, even camera can't capture every monitor update, every frame still
-shows the correct pattern of image: clearest image always appear at bottom right (because we draw new qrcode top-bottom, left-right)
-but 10FPS is like this:
+Then measure it with my approach, this time it's more tricky, since the camera doesn't work the exactly way at different FPS. For 30 FPS streaming, even camera can't capture every monitor update, every frame still shows the correct pattern of image: clearest image always appear at bottom right (because we draw new qrcode top-bottom, left-right) but 10FPS is like this:
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/10fps_9_qrcode.gif), 
 
-Looks like all qrcode appear/disappear at same time, lead lots of empty image. 
-my suspect is that short appeared image signal will be 'smooth' out, compared to long shutter time. I increase the number of qrcode grid from 3x3 to 4x4, also increasing the stay time of every qrcode,
-then the capture like this
+all qrcode appear/disappear at same time, lead lots of empty image. My suspect is that camera shutter/timer doesn't work at constant frequency (as capture delta plot shown, it constantly jumping between two duration). So I increase the number of qrcode grid from 3x3 to 4x4, also increasing the stay time of every qrcode, then the capture like this
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/10fps_16_qrcode.gif), 
 
-now I have better result
+still not the correct image pattern, but at least better:
 
   ![image]({{ site.baseurl }}/images/2026-02-09-journal-on-camera-latency-measure/10fps_latency_plot.png), 
 
-average latency 82.9 ms, best case 53 ms, worst case 113 ms. Again, this data
-makes more sense, with longer interval, we observe the latency (lead by 3 different parts) pattern being dominated by Interval. The period of this pattern is about 3 times of screen interval (6x3 ~ 18), 
+Average latency 82.9 ms, best case 53 ms, worst case 113 ms. So latency range should be 47 ~ 113. Such value seems more matched to original script result because it's dominated by the frequency part of latency.
 
 
 
